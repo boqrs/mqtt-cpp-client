@@ -62,7 +62,7 @@ file(MAKE_DIRECTORY ${PROTO_GEN_DIR})
 file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/generated)
 
 # ------------------------------------------------------------------------------
-# 3. 依赖查找（针对 Docker 环境硬编码路径）
+# 3. 依赖查找
 # ------------------------------------------------------------------------------
 # 查找 Protobuf
 find_package(Protobuf REQUIRED)
@@ -72,7 +72,7 @@ message(STATUS "Protobuf 版本: ${Protobuf_VERSION}")
 find_package(ZLIB REQUIRED)
 message(STATUS "Zlib 版本: ${ZLIB_VERSION_STRING}")
 
-# Paho MQTT Embedded C（Dockerfile 中已安装）
+# 查找 Paho MQTT C（手动设置路径）
 set(PAHO_MQTT_C_INCLUDE_DIRS /usr/local/include/paho-mqtt)
 set(PAHO_MQTT_C_LIB /usr/local/lib/libmqttpacket.a)
 
@@ -87,83 +87,39 @@ endif()
 # 查找线程库
 find_package(Threads REQUIRED)
 
+# 查找 fmt 库（spdlog 的依赖，必须安装 libfmt-dev）
+find_package(fmt REQUIRED)
+message(STATUS "找到 fmt 库")
+
 # ------------------------------------------------------------------------------
-# 4. 集成 spdlog 和 fmt（Dockerfile 中已安装）
+# 4. 集成 spdlog 选项
 # ------------------------------------------------------------------------------
 option(ENABLE_SPDLOG "启用 spdlog 日志库" ON)
 option(SPDLOG_ASYNC_LOGGING "启用异步日志" OFF)
 
+# spdlog 全局编译定义（应用于所有目标）
 if(ENABLE_SPDLOG)
-    message(STATUS "正在集成 spdlog 日志库...")
+    add_compile_definitions(
+            SPDLOG_FMT_EXTERNAL=1      # 使用外部 fmt 库
+            SPDLOG_NO_THREAD_ID=1
+            SPDLOG_NO_ATOMIC_LEVELS=1
+            SPDLOG_NO_TLS=1
+            SPDLOG_NO_EXCEPTIONS=1
+    )
 
-    # spdlog 路径
-    set(SPDLOG_INCLUDE_DIR /usr/local/include)
-    set(SPDLOG_LIBRARY /usr/local/lib/libspdlog.a)
-
-    # fmt 路径
-    set(FMT_INCLUDE_DIR /usr/local/include)
-    set(FMT_LIBRARY /usr/local/lib/libfmt.a)
-
-    if(EXISTS ${SPDLOG_INCLUDE_DIR}/spdlog/spdlog.h)
-        message(STATUS "找到 spdlog 头文件目录: ${SPDLOG_INCLUDE_DIR}")
-
-        # 创建接口库
-        add_library(spdlog_interface INTERFACE)
-        target_include_directories(spdlog_interface INTERFACE ${SPDLOG_INCLUDE_DIR})
-
-        if(EXISTS ${FMT_INCLUDE_DIR}/fmt/core.h)
-            message(STATUS "找到 fmt 头文件目录: ${FMT_INCLUDE_DIR}")
-            target_include_directories(spdlog_interface INTERFACE ${FMT_INCLUDE_DIR})
-
-            if(EXISTS ${FMT_LIBRARY})
-                target_link_libraries(spdlog_interface INTERFACE ${FMT_LIBRARY})
-            endif()
-        endif()
-
-        if(EXISTS ${SPDLOG_LIBRARY})
-            target_link_libraries(spdlog_interface INTERFACE ${SPDLOG_LIBRARY})
-        endif()
-
-        set(spdlog_FOUND TRUE)
-        set(SPDLOG_AVAILABLE TRUE)
+    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+        add_compile_definitions(SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG)
     else()
-        message(WARNING "未找到 spdlog 头文件，将禁用 spdlog 支持")
-        set(ENABLE_SPDLOG OFF)
-        set(SPDLOG_AVAILABLE FALSE)
+        add_compile_definitions(SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_INFO)
     endif()
 
-    if(ENABLE_SPDLOG)
-        # 为嵌入式环境优化配置
-        add_compile_definitions(
-                SPDLOG_NO_THREAD_ID=1
-                SPDLOG_NO_ATOMIC_LEVELS=1
-                SPDLOG_NO_TLS=1
-                SPDLOG_NO_EXCEPTIONS=1
-                SPDLOG_FMT_EXTERNAL=1
-                SPDLOG_NO_RTTI=1
-        )
-
-        # 根据构建类型设置日志级别
-        if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-            add_compile_definitions(
-                    SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG
-            )
-        else()
-            add_compile_definitions(
-                    SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_INFO
-            )
-        endif()
-
-        if(SPDLOG_ASYNC_LOGGING)
-            add_compile_definitions(SPDLOG_ASYNC=1)
-        endif()
-
-        message(STATUS "spdlog 集成完成")
+    if(SPDLOG_ASYNC_LOGGING)
+        add_compile_definitions(SPDLOG_ASYNC=1)
     endif()
 endif()
 
 # ------------------------------------------------------------------------------
-# 5. Protobuf消息生成
+# 5. Protobuf 消息生成
 # ------------------------------------------------------------------------------
 file(GLOB PROTO_FILES ${PROTO_DIR}/*.proto)
 
@@ -212,18 +168,11 @@ target_include_directories(proto_messages PUBLIC
         ${Protobuf_INCLUDE_DIRS}
 )
 
-# Protobuf 需要 RTTI 和异常
-target_compile_options(proto_messages PRIVATE
-        -frtti
-        -fexceptions
-        -Wno-unused-parameter
-)
-
 target_link_libraries(proto_messages PUBLIC ${Protobuf_LIBRARIES})
 set_source_files_properties(${PROTO_SRCS} ${PROTO_HDRS} PROPERTIES GENERATED TRUE)
 
 # ------------------------------------------------------------------------------
-# 6. 日志系统库
+# 6. 日志系统库 (embedded_logger)
 # ------------------------------------------------------------------------------
 file(GLOB LOGGER_SRCS ${SOURCE_ROOT}/logger/*.cpp)
 file(GLOB LOGGER_HDRS ${INCLUDE_DIR}/logger/*.h ${INCLUDE_DIR}/logger/**/*.h)
@@ -231,37 +180,41 @@ file(GLOB LOGGER_HDRS ${INCLUDE_DIR}/logger/*.h ${INCLUDE_DIR}/logger/**/*.h)
 if(LOGGER_SRCS)
     message(STATUS "找到日志源文件，创建日志库...")
 
+    # 第一步：必须先创建目标
     add_library(embedded_logger STATIC ${LOGGER_SRCS})
 
+    # 第二步：配置基本属性
     target_include_directories(embedded_logger PUBLIC
             ${INCLUDE_DIR}
             ${PROTO_GEN_DIR}
             ${CMAKE_BINARY_DIR}/generated
     )
 
-    # 添加 spdlog 包含目录
-    if(SPDLOG_AVAILABLE)
-        target_include_directories(embedded_logger PRIVATE ${SPDLOG_INCLUDE_DIR})
-        target_include_directories(embedded_logger PRIVATE ${FMT_INCLUDE_DIR})
-
-        target_compile_definitions(embedded_logger PRIVATE ENABLE_SPDLOG=1)
-
-        if(TARGET spdlog_interface)
-            target_link_libraries(embedded_logger PRIVATE spdlog_interface)
-        endif()
-    else()
-        target_compile_definitions(embedded_logger PRIVATE ENABLE_SPDLOG=0)
-    endif()
-
-    # 日志库编译选项
-    target_compile_options(embedded_logger PRIVATE
-            -Wno-unused-parameter
-    )
 
     target_compile_definitions(embedded_logger PRIVATE
             PROJECT_NAME="${PROJECT_NAME}"
             PROJECT_VERSION="${PROJECT_VERSION}"
     )
+
+    # 第三步：配置 spdlog（仅在创建目标后）
+    if(ENABLE_SPDLOG)
+        message(STATUS "正在为 embedded_logger 配置 spdlog...")
+
+        # 手动指定 spdlog 头文件路径
+        target_include_directories(embedded_logger PRIVATE /usr/local/include)
+
+        # 手动链接 spdlog 静态库
+        target_link_libraries(embedded_logger PRIVATE /usr/local/lib/libspdlog.a)
+
+        # 链接 fmt 库（解决 spdlog 内部依赖）
+        target_link_libraries(embedded_logger PRIVATE fmt::fmt)
+
+        # 启用 spdlog 的编译定义
+        target_compile_definitions(embedded_logger PRIVATE ENABLE_SPDLOG=1)
+        message(STATUS "spdlog 配置完成")
+    else()
+        target_compile_definitions(embedded_logger PRIVATE ENABLE_SPDLOG=0)
+    endif()
 
     target_link_libraries(embedded_logger PUBLIC Threads::Threads)
 
@@ -299,13 +252,10 @@ if(UTILS_SRCS)
 
     target_link_libraries(comm PUBLIC
             proto_messages
+            embedded_logger  # 链接日志库
             ${Protobuf_LIBRARIES}
             ${ZLIB_LIBRARIES}
     )
-
-    if(TARGET embedded_logger)
-        target_link_libraries(comm PUBLIC embedded_logger)
-    endif()
 
     message(STATUS "通用工具库创建完成: comm")
 else()
@@ -313,7 +263,7 @@ else()
 endif()
 
 # ------------------------------------------------------------------------------
-# 8. 数据处理器模块
+# 8. 数据处理器模块 (data_processor)
 # ------------------------------------------------------------------------------
 file(GLOB DATA_PROCESSOR_SRCS
         ${SOURCE_ROOT}/processor/*.cpp
@@ -334,11 +284,8 @@ if(DATA_PROCESSOR_SRCS)
     target_link_libraries(data_processor PUBLIC
             comm
             proto_messages
+            embedded_logger  # 链接日志库
     )
-
-    if(TARGET embedded_logger)
-        target_link_libraries(data_processor PUBLIC embedded_logger)
-    endif()
 
     message(STATUS "数据处理器库创建完成: data_processor")
 else()
@@ -346,7 +293,7 @@ else()
 endif()
 
 # ------------------------------------------------------------------------------
-# 9. MQTT发布器模块
+# 9. MQTT发布器模块 (mqtt_publisher)
 # ------------------------------------------------------------------------------
 file(GLOB MQTT_PUBLISHER_SRCS
         ${SOURCE_ROOT}/mqtt/*.cpp
@@ -368,18 +315,16 @@ if(MQTT_PUBLISHER_SRCS)
         target_include_directories(mqtt_publisher PUBLIC ${PAHO_MQTT_C_INCLUDE_DIRS})
     endif()
 
+
     target_link_libraries(mqtt_publisher PUBLIC
             comm
             proto_messages
+            embedded_logger  # 链接日志库
             ${ZLIB_LIBRARIES}
     )
 
     if(PAHO_MQTT_C_FOUND)
         target_link_libraries(mqtt_publisher PUBLIC ${PAHO_MQTT_C_LIB})
-    endif()
-
-    if(TARGET embedded_logger)
-        target_link_libraries(mqtt_publisher PUBLIC embedded_logger)
     endif()
 
     message(STATUS "MQTT发布器库创建完成: mqtt_publisher")
@@ -449,10 +394,9 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         ${CMAKE_BINARY_DIR}/generated
 )
 
-# 添加 spdlog 包含目录（如果启用）
-if(SPDLOG_AVAILABLE)
-    target_include_directories(${PROJECT_NAME} PRIVATE ${SPDLOG_INCLUDE_DIR})
-    target_include_directories(${PROJECT_NAME} PRIVATE ${FMT_INCLUDE_DIR})
+# 添加 spdlog 头文件路径（确保 CLion 能索引到）
+if(ENABLE_SPDLOG)
+    target_include_directories(${PROJECT_NAME} PRIVATE /usr/local/include)
 endif()
 
 if(PAHO_MQTT_C_FOUND)
@@ -460,32 +404,25 @@ if(PAHO_MQTT_C_FOUND)
 endif()
 
 # 链接所有库
-set(TARGET_LIBS
+target_link_libraries(${PROJECT_NAME} PRIVATE
         mqtt_publisher
         data_processor
         comm
         proto_messages
+        embedded_logger  # 链接日志库
         Threads::Threads
         ${ZLIB_LIBRARIES}
         ${Protobuf_LIBRARIES}
 )
 
 if(PAHO_MQTT_C_FOUND)
-    list(APPEND TARGET_LIBS ${PAHO_MQTT_C_LIB})
+    target_link_libraries(${PROJECT_NAME} PRIVATE ${PAHO_MQTT_C_LIB})
 endif()
 
-if(TARGET embedded_logger)
-    list(APPEND TARGET_LIBS embedded_logger)
+# 链接 fmt 库（通过 embedded_logger 间接链接，这里显式链接确保解析）
+if(ENABLE_SPDLOG)
+    target_link_libraries(${PROJECT_NAME} PRIVATE fmt::fmt)
 endif()
-
-# 添加 spdlog 依赖
-if(SPDLOG_AVAILABLE)
-    if(TARGET spdlog_interface)
-        list(APPEND TARGET_LIBS spdlog_interface)
-    endif()
-endif()
-
-target_link_libraries(${PROJECT_NAME} PRIVATE ${TARGET_LIBS})
 
 # 设置目标属性
 set_target_properties(${PROJECT_NAME} PROPERTIES
@@ -533,8 +470,9 @@ if(PAHO_MQTT_C_FOUND)
 else()
     message(STATUS "    - Paho MQTT C: 未找到")
 endif()
-if(SPDLOG_AVAILABLE)
-    message(STATUS "    - spdlog: 已启用")
+if(ENABLE_SPDLOG)
+    message(STATUS "    - spdlog: 已启用 (手动配置)")
+    message(STATUS "    - fmt: 已找到")
 else()
     message(STATUS "    - spdlog: 未启用")
 endif()
@@ -555,7 +493,7 @@ if(TARGET mqtt_publisher)
 endif()
 message(STATUS "")
 message(STATUS "  构建命令:")
-message(STATUS "    mkdir build && cd build")
+message(STATUS "    rm -rf build && mkdir build && cd build")
 message(STATUS "    cmake .. -DCMAKE_BUILD_TYPE=Debug")
 message(STATUS "    make -j\$(nproc)")
 message(STATUS "")

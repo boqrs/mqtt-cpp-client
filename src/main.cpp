@@ -222,7 +222,7 @@ int main() {
             counter++;
 
             // 等待1秒
-            std::this_thread::sleep_for(1s);
+            std::this_thread::sleep_for(500ms);
         }
     } catch (const std::exception& e) {
         std::cerr << "发生异常: " << e.what() << std::endl;

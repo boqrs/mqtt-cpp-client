@@ -1,0 +1,30 @@
+// 项目配置头文件 - 自动生成
+#pragma once
+
+// 项目信息
+#define PROJECT_NAME "@PROJECT_NAME@"
+#define PROJECT_VERSION "@PROJECT_VERSION@"
+#define PROJECT_BUILD_TYPE "@CMAKE_BUILD_TYPE@"
+
+// 构建信息
+#define CMAKE_VERSION "@CMAKE_VERSION@"
+#define CMAKE_SYSTEM "@CMAKE_SYSTEM@"
+#define CMAKE_CXX_COMPILER_ID "@CMAKE_CXX_COMPILER_ID@"
+#define CMAKE_CXX_COMPILER_VERSION "@CMAKE_CXX_COMPILER_VERSION@"
+
+// 构建时间
+#define BUILD_DATE __DATE__
+#define BUILD_TIME __TIME__
+
+// 功能开关
+#define ENABLE_SPDLOG @ENABLE_SPDLOG@
+#define SPDLOG_ASYNC_LOGGING @SPDLOG_ASYNC_LOGGING@
+
+// 辅助宏
+#define CONCAT_(x, y) x##y
+#define CONCAT(x, y) CONCAT_(x, y)
+#define STRINGIFY_(x) #x
+#define STRINGIFY(x) STRINGIFY_(x)
+
+// 版本信息字符串
+#define PROJECT_VERSION_STRING PROJECT_NAME " v" STRINGIFY(PROJECT_VERSION)

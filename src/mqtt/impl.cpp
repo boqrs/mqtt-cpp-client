@@ -13,6 +13,7 @@
 
 
 #include "MQTTPacket.h"
+#include "logger/logger.h"
 
 int transport_send(int sockfd, const unsigned char* buf, size_t len) {
     ssize_t sent = 0;
@@ -62,19 +63,19 @@ bool Impl::resolve_host(struct sockaddr_in &addr) {
         return true;
     }
 
-    std::cerr<<"[MQTT] 无法解析主机: "<<broker_ip<<std::endl;
+    LOG_ERROR("[MQTT] can not resolve host: ", broker_ip);
     return false;
 }
 
 bool Impl::connect(const std::string &username, const std::string &password) {
     if(connected){
-        std::cerr<<"[MQTT] server has been connected"<<std::endl;
+        LOG_ERROR("[MQTT] server has been connected");
         return true;
     }
 
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd <0){
-        std::cerr<<"[MQTT] failed to create socket"<<std::endl;
+        LOG_ERROR("[MQTT] failed to create socket");
         return false;
     }
 
@@ -92,8 +93,7 @@ bool Impl::connect(const std::string &username, const std::string &password) {
     setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
 
     if (::connect(sockfd, (struct  sockaddr*)&server_addr, sizeof (server_addr)) <0){
-        std::cerr << "[MQTT]failed to connected to server: " << strerror(errno)
-                  << " (errno: " << errno << ")" << std::endl;
+        LOG_ERROR("[MQTT] failed to connected to server {}, (errno: {})", strerror(errno), errno);
         close(sockfd);
         sockfd = -1;
         return false;
@@ -123,13 +123,13 @@ bool Impl::connect(const std::string &username, const std::string &password) {
     );
 
     if (packet_len <= 0) {
-        std::cerr << "[MQTT] failed to marsh connect packet" << std::endl;
+        LOG_ERROR("[MQTT] failed to marsh connect packet");
         disconnect_internal();
         return false;
     }
 
     if (transport_send(sockfd, send_buf, packet_len) != packet_len) {
-        std::cerr << "[MQTT] failed to send connect packet" << std::endl;
+        LOG_ERROR("[MQTT] failed to send connect packet");
         disconnect_internal();
         return false;
     }
@@ -137,8 +137,11 @@ bool Impl::connect(const std::string &username, const std::string &password) {
     // 7. rev CONNACK response（
     int rc = transport_recv(sockfd, recv_buf, sizeof(recv_buf), 5000);
     if (rc <= 0) {
-        std::cerr << "[MQTT] Recv Connect Ack"
-                  << (rc == 0 ? "timeout" : "failed") << std::endl;
+        if (rc == 0){
+            LOG_ERROR("[MQTT] Recv Connect Ack timeout");
+        } else{
+            LOG_ERROR("[MQTT] Recv Connect Ack failed");
+        }
         disconnect_internal();
         return false;
     }
@@ -147,26 +150,26 @@ bool Impl::connect(const std::string &username, const std::string &password) {
     unsigned char session_present, connack_rc;
     if (MQTTDeserialize_connack(&session_present, &connack_rc,
                                 recv_buf, rc) != 1) {
-        std::cerr << "[MQTT] failed to parseCONNACK" << std::endl;
+        LOG_ERROR("[MQTT] failed to parseCONNACK");
         disconnect_internal();
         return false;
     }
 
     if (connack_rc != 0) {
-        std::cerr << "[MQTT] refused to connect, code: " << static_cast<int>(connack_rc) << std::endl;
+        LOG_ERROR("[MQTT] refused to connect, code: {}", static_cast<int>(connack_rc));
         disconnect_internal();
         return false;
     }
 
     connected = true;
-    std::cout << "[MQTT] connect successfully" << std::endl;
+    LOG_INFO("[MQTT] connect successfully");
     return true;
 
 }
 
 bool Impl::publish(const std::string &topic, const std::string &payload, int qos) {
     if (!connected) {
-        std::cerr << "[MQTT] connected is empty" << std::endl;
+        LOG_ERROR("[MQTT] connected is empty");
         return false;
     }
 
@@ -189,12 +192,12 @@ bool Impl::publish(const std::string &topic, const std::string &payload, int qos
 
 
     if (packet_len <= 0) {
-        std::cerr << "[MQTT] failed marsh publish packet" << std::endl;
+        LOG_ERROR("[MQTT] failed marsh publish packet");
         return false;
     }
 
     if (transport_send(sockfd, send_buf, packet_len) != packet_len) {
-        std::cerr << "[MQTT] failed to send publish packet" << std::endl;
+        LOG_ERROR("[MQTT] failed to send publish packet");
         return false;
     }
 
@@ -204,7 +207,7 @@ bool Impl::publish(const std::string &topic, const std::string &payload, int qos
 
 bool Impl::subscribe(const std::string &topic, int qos) {
     if (!connected) {
-        std::cerr << "[MQTT] connect is empty，failed to subscribe" << std::endl;
+        LOG_ERROR("[MQTT] connect is empty，failed to subscribe");
         return false;
     }
 
@@ -226,19 +229,18 @@ bool Impl::subscribe(const std::string &topic, int qos) {
     );
 
     if (packet_len <= 0) {
-        std::cerr << "[MQTT] failed to marsh sub packet" << std::endl;
+        LOG_ERROR("[MQTT] failed to marsh sub packet");
         return false;
     }
 
     if (transport_send(sockfd, send_buf, packet_len) != packet_len) {
-        std::cerr << "[MQTT] failed to send sub packet" << std::endl;
+        LOG_ERROR("[MQTT] failed to send sub packet");
         return false;
     }
 
     int rc = transport_recv(sockfd, recv_buf, sizeof(recv_buf), 2000);
     if (rc > 0) {
-        std::cout << "[MQTT] sub topic: " << topic
-                  << " (QoS: " << qos << ")" << std::endl;
+        LOG_ERROR("[MQTT] sub topic: ( Qos: {})", qos);
         return true;
     }
     return false;
@@ -254,7 +256,7 @@ void Impl::sendPubAck(unsigned short packet_id) {
     puback_buf[3] = packet_id & 0xFF;
 
     if (transport_send(sockfd, puback_buf, 4) != 4) {
-        std::cerr << "[MQTT] 发送 PUBACK 失败" << std::endl;
+        LOG_ERROR("failed to send PUBACK");
     }
 }
 
@@ -278,7 +280,7 @@ void Impl::handlePublishPacketUsingPaho(unsigned char* buf, int buflen) {
     );
 
     if (success != 1) {
-        std::cerr << "[MQTT] failed to parse publish packet" << std::endl;
+        LOG_ERROR("[MQTT] failed to parse publish packet");
         return;
     }
 
@@ -290,7 +292,7 @@ void Impl::handlePublishPacketUsingPaho(unsigned char* buf, int buflen) {
     } else if (receivedTopic.cstring) {
         topic = std::string(receivedTopic.cstring);
     } else {
-        std::cerr << "[MQTT] unknown topic name" << std::endl;
+        LOG_ERROR("[MQTT] unknown topic name");
         return;
     }
 
@@ -299,13 +301,8 @@ void Impl::handlePublishPacketUsingPaho(unsigned char* buf, int buflen) {
         payload = std::string(reinterpret_cast<char*>(payload_in), payloadlen_in);
     }
 
-    // 输出调试信息
-    std::cout << "[MQTT] rev packet: " << topic
-              << " [QoS:" << qos
-              << ", DUP:" << static_cast<int>(dup)
-              << ", RETAIN:" << static_cast<int>(retained)
-              << ", PID:" << packetid
-              << ", Size:" << payloadlen_in << "]" << std::endl;
+    LOG_ERROR("[MQTT] rev packet: topic: {}, qos: {}, dup: {}, RETAIN:{}, PID:{}, Size:{}",
+              topic, qos, static_cast<int>(dup), static_cast<int>(retained), packetid, packetid, payloadlen_in);
 
     // 回调给用户
     user_cb(topic, payload);
@@ -326,10 +323,11 @@ void Impl::handleSubAckPacket(unsigned char* buf, int buflen) {
     int success = MQTTDeserialize_suback(&packetid, 1, &count, &granted_qos, buf, buflen);
 
     if (success == 1 && count == 1) {
-        std::cout << "[MQTT] sub ack: PacketID=" << packetid
-                  << ", QoS=" << granted_qos << std::endl;
+
+        LOG_ERROR("[MQTT] sub ack: PacketID={}, QoS={}",
+                  packetid, granted_qos);
     } else {
-        std::cerr << "[MQTT] parse SUBACK failed" << std::endl;
+        LOG_ERROR("[MQTT] parse SUBACK failed" );
     }
 }
 
@@ -345,8 +343,7 @@ void Impl::yield(int timeout_ms) {
         switch (packet_type) {
             case 3:
                 if (user_cb) {
-                    std::cout << "[MQTT] rev packet ("
-                              << rc << " bytes)" << std::endl;
+                    LOG_ERROR("[MQTT] rev packet ({}bytes)", rc);
                     handlePublishPacketUsingPaho(recv_buf, rc);
                 }
                 break;
@@ -356,8 +353,7 @@ void Impl::yield(int timeout_ms) {
             case 4:
                 break;
             default:
-                std::cout << "[MQTT] unknown packet: "
-                          << static_cast<int>(packet_type) << std::endl;
+                LOG_ERROR("[MQTT] unknown packet: {}", static_cast<int>(packet_type));
         }
     }
 }

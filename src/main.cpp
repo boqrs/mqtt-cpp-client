@@ -3,12 +3,16 @@
 // Created by wave on 2026/1/7.
 //
 
-#include "mqtt/device_status_publisher.h"
 #include <iostream>
 #include <thread>
 #include <csignal>
 #include <atomic>
 #include <chrono>
+
+#include "spdlog/spdlog.h"
+#include "logger/logger.h"
+#include "mqtt/device_status_publisher.h"
+
 
 using namespace std::chrono_literals;
 
@@ -52,13 +56,20 @@ public:
 
 int main() {
     using namespace swan;
-
     // 注册信号处理
     std::signal(SIGINT, signal_handler);
 
-    std::cout << "SWAN MQTT 设备状态发布器启动" << std::endl;
-    std::cout << "按 Ctrl+C 停止程序" << std::endl;
-    std::cout << "==============================" << std::endl;
+    // 1. 初始化日志系统
+    LoggerConfig logCfg;
+    logCfg.level = LogLevel::DEBUG_LEVEL;  // 设置日志级别为DEBUG，这样DEBUG及以上的日志都会输出
+    logCfg.consoleOutput = true;           // 输出到控制台
+    logCfg.fileOutput = false;             // 不输出到文件
+    logCfg.asyncLogging = true;            // 使用异步日志（如果你的实现支持）
+    logCfg.pattern = "[%Y-%m-%d %H:%M:%S.%e] [%l] [%t] %v"; // 自定义格式
+    initializeLogger(logCfg);
+
+    LOG_INFO("按 Ctrl+C 停止程序");
+    LOG_INFO("==============================");
 
     // 配置发布器
     mqtt::DeviceStatusPublisherConfig config;
@@ -80,12 +91,12 @@ int main() {
 
     // 初始化并启动
     if (!publisher->initialize(config)) {
-        std::cerr << "Failed to initialize publisher" << std::endl;
+        LOG_ERROR("Failed to initialize publisher" );
         return 1;
     }
 
     if (!publisher->start()) {
-        std::cerr << "Failed to start publisher" << std::endl;
+        LOG_ERROR("Failed to start publisher" );
         return 1;
     }
 
@@ -171,9 +182,6 @@ int main() {
     status.setActionType("status_report");
 
     int counter = 0;
-    std::cout << "开始发布消息，频率: 1秒/次" << std::endl;
-    std::cout << "==============================" << std::endl;
-
     try {
         while (g_running) {
             // 更新状态数据
@@ -211,12 +219,8 @@ int main() {
 
             // 打印当前进度
             if (counter % 5 == 0) {
-                std::cout << "[" << std::chrono::system_clock::now().time_since_epoch().count()
-                          << "] 发布第 " << counter << " 条消息"
-                          << " - 进度: " << data.progress.progress << "%"
-                          << " - 温度: L:" << data.temperatures.left_temperature
-                          << "°C R:" << data.temperatures.right_temperature << "°C"
-                          << std::endl;
+                LOG_INFO("发布第{}条消息, 进度 {}%, 温度: L: {} °C R: {} °C",
+                         counter, data.progress.progress, data.temperatures.left_temperature, data.temperatures.right_temperature);
             }
 
             counter++;
@@ -225,15 +229,14 @@ int main() {
             std::this_thread::sleep_for(500ms);
         }
     } catch (const std::exception& e) {
-        std::cerr << "发生异常: " << e.what() << std::endl;
+        LOG_ERROR("发生异常: {}", e.what());
     }
 
     // 停止发布器
-    std::cout << "正在停止发布器..." << std::endl;
+    LOG_WARN("正在停止发布器...");
+
     publisher->stop();
-
-    std::cout << "总计发布 " << counter << " 条消息" << std::endl;
-    std::cout << "程序已退出" << std::endl;
-
+    LOG_INFO("总计发布{} 条消息", counter);
+    LOG_INFO("程序退出");
     return 0;
 }

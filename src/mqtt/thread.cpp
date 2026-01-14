@@ -6,7 +6,7 @@
 #include <algorithm>
 #include <chrono>
 
-
+#include "logger/logger.h"
 #include "mqtt/thread.h"
 
 
@@ -25,7 +25,7 @@ MqttThread::~MqttThread() {
 
 bool MqttThread::start(bool auto_reconnect, int reconnect_interval) {
     if(m_running){
-        std::cerr<<"[MQTTThread] already start"<<std::endl;
+        LOG_ERROR("[MQTTThread] already start");
         return false;
     }
 
@@ -39,7 +39,7 @@ bool MqttThread::start(bool auto_reconnect, int reconnect_interval) {
         this->workerThread();
     });
 
-    std::cout<<"[MQTT Thread] thread start"<<std::endl;
+    LOG_INFO("[MQTT Thread] thread start");
     return true;
 }
 
@@ -48,7 +48,7 @@ void MqttThread::stop() {
         return;
     }
 
-    std::cout<<"[MQTT Thread] thread stop"<<std::endl;
+    LOG_INFO("[MQTT Thread] thread stop");
 
     m_running = false;
 
@@ -62,11 +62,11 @@ void MqttThread::stop() {
         m_client->disconnect();
     }
 
-    std::cout<<"[MQTT Thread] thread stopped"<<std::endl;
+    LOG_INFO("[MQTT Thread] thread stopped");
 }
 
 void MqttThread::workerThread() {
-    std::cout << "[MQTT Thread] start worker thread" << std::endl;
+    LOG_INFO("[MQTT Thread] start worker thread");
     while (m_running) {
         try {
             bool was_connnected = m_connected.load();
@@ -94,19 +94,19 @@ void MqttThread::workerThread() {
                         std::this_thread::sleep_for(std::chrono::milliseconds(100));
                     }
                 } else {
-                    std::cout << "[MQTT Thread]connected failed" << std::endl;
+                    LOG_INFO("[MQTT Thread]connected failed");
                     break;
                 }
             }
 
         } catch (const std::exception &e) {
-            std::cerr << "[MQTT Thread] worker thread error: " << e.what() << std::endl;
+            LOG_ERROR("[MQTT Thread] worker thread error: {}", e.what());
             updateStatus("error: " + std::string(e.what()), false);
             std::this_thread::sleep_for(std::chrono::seconds(1));
         }
 
     }
-    std::cout<<"[MQTT Thread] worker stopped"<<std::endl;
+    LOG_INFO("[MQTT Thread] worker stopped");
 }
 
 
@@ -118,8 +118,7 @@ bool MqttThread::handleConnection() {
     updateStatus("connecting...", false);
     bool  connected = false;
     if(m_username.empty()){
-        std::cerr<<"[MQTT Thread] username is empty"<<std::endl;
-        //connected = m_client->connect();
+        LOG_ERROR("[MQTT Thread] username is empty");
     } else{
         connected = m_client->connect(m_username, m_password);
     }
@@ -137,7 +136,6 @@ void MqttThread::handleMessageSending() {
         return;
     }
 
-    //TODO： 这是单条的同步消息，提供了异步消息和同步消息两种形式
     if (m_current_sync_publish) {
         auto sync_msg = m_current_sync_publish;
         lock.unlock();
@@ -151,7 +149,7 @@ void MqttThread::handleMessageSending() {
         sync_msg->completed = true;
         sync_msg->cv.notify_one();
 
-        m_current_sync_publish.reset(); //TODO: 这里释放消息锁
+        m_current_sync_publish.reset();
         return;
     }
 
@@ -164,14 +162,13 @@ void MqttThread::handleMessageSending() {
         try {
             bool success = m_client->publish(msg.topic, msg.payload, msg.qos);
             if (!success) {
-                std::cerr << "[MQTT Thread] failed to publish: " << msg.topic << std::endl;
-
+                LOG_ERROR("[MQTT Thread] failed to publish: {}", msg.topic);
                 // TODO: 可以考虑将失败的消息重新加入队列,这里简单丢弃
             } else {
-                std::cout<<"[MQTT Thread] publish successfully"<<std::endl;
+                LOG_ERROR("[MQTT Thread] publish successfully");
             }
         } catch (...) {
-            std::cerr << "[MQTT Thread] 发布消息时发生异常" << std::endl;
+            LOG_ERROR("[MQTT Thread] failed to publish message");
         }
 
         lock.lock();
@@ -182,7 +179,7 @@ void MqttThread::handleMessageSending() {
 bool  MqttThread::publish(const std::string &topic, const std::string &payload, int qos, bool retained) {
 
     if(!m_running){
-        std::cout<<"[MQTT Thread] mqtt client is not start"<<std::endl;
+        LOG_ERROR("[MQTT Thread] mqtt client is not start");
         return false;
     }
 
@@ -198,7 +195,7 @@ bool  MqttThread::publish(const std::string &topic, const std::string &payload, 
 
 bool MqttThread::publishSync(const std::string &topic, const std::string &payload, int qos, int timeout_ms) {
     if (!m_running){
-        std::cerr<<"[MQTT Thread] not running"<<std::endl;
+        LOG_ERROR("[MQTT Thread] not running");
         return false;
     }
 
@@ -223,7 +220,7 @@ bool MqttThread::publishSync(const std::string &topic, const std::string &payloa
 
 
     if (!status) {
-        std::cerr << "[MQTT Thread] timeout for sync message" << std::endl;
+        LOG_ERROR("[MQTT Thread] timeout for sync message");
         std::lock_guard<std::mutex> queue_lock(m_queue_mutex);
         if (m_current_sync_publish == sync_msg) {
             m_current_sync_publish.reset();
@@ -261,7 +258,7 @@ void MqttThread::onMessageReceived(const std::string& topic,
         try {
             m_message_callback(topic, payload);
         } catch (const std::exception& e) {
-            std::cerr << "[MQTT Thread] message callback failed : " << e.what() << std::endl;
+            LOG_ERROR("[MQTT Thread] message callback failed : {}", e.what() );
         }
     }
 }
@@ -280,7 +277,7 @@ void MqttThread::updateStatus(const std::string& status, bool connected) {
         try {
             m_status_callback(status, connected);
         } catch (const std::exception& e) {
-            std::cerr << "[MQTT Thread] status callback error: " << e.what() << std::endl;
+            LOG_ERROR("[MQTT Thread] status callback error: : {}", e.what() );
         }
     }
 }

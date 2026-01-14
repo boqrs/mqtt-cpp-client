@@ -112,7 +112,6 @@ private:
     MessageCallback m_message_callback;
     StatusCallback m_status_callback;
 
-    //TODO：这个是否需要
     std::vector<std::pair<std::string, int>> m_subscriptions;
     mutable std::mutex m_sub_mutex;
 };

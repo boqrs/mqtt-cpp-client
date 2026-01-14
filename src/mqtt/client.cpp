@@ -5,11 +5,13 @@
 #include <utility>
 #include <sys/socket.h>
 #include <netinet/in.h>
-
+#include "logger/logger.h"
 #include "mqtt/client.h"
 
 MqttClient::MqttClient(const std::string &ip, int port, const std::string &client_id):pimpl_(std::make_unique<Impl>(ip, port, client_id)) {
-    std::cout<<"[MQTT] 初始化客户端: "<<client_id<<" ip: "<<ip<<" port: "<<port<<std::endl;
+
+
+    LOG_INFO("[MQTT] 初始化客户端, ip:{}, prt: {}", ip, port);
 }
 
 MqttClient::~MqttClient()=default;

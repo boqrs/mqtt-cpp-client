@@ -1,0 +1,121 @@
+syntax = "proto3";
+
+package device.control;
+
+// 主控制指令，使用 oneof 处理不同类型的命令
+message ControlCommand {
+  string cmd = 1;  // 命令名称
+
+  oneof command_args {
+    NewJobCmd new_job = 2;
+    NewLocalJobCmd new_local_job = 3;
+    LightControlCmd light_control = 4;
+    TemperatureControlCmd temperature_control = 5;
+    StreamControlCmd stream_control = 6;
+    UserProfileCmd user_profile = 7;
+    DeviceUnregisterCmd device_unregister = 8;
+    // 预留未来扩展
+  }
+}
+
+// ========== 作业控制相关命令 ==========
+
+// 材质信息 (MS - Material Slot)
+message MaterialInfo {
+  int32 slot = 1;           // 料槽编号
+  int32 t_num = 2;          // 工具头编号
+  string s_rgb = 3;         // 起始颜色
+  string t_rgb = 4;         // 目标颜色
+  string material_type = 5; // 材质类型，如 "PLA"
+}
+
+// 远程作业参数
+message NewJobArgs {
+  string filename = 1;
+  string file_md5 = 2;
+  string filepath = 3;
+  string thumb_path = 4;
+  bool print_now = 5;
+  bool leveling = 6;
+  bool flow_calibration = 7;
+  bool use_ms = 8;
+  int32 t_count = 9;
+  repeated MaterialInfo ms = 10;  // 材质信息列表
+}
+
+// 新远程作业命令
+message NewJobCmd {
+  repeated JobInfo job_info = 1;  // 作业信息列表
+  NewJobArgs args = 2;
+}
+
+// 作业信息 (包含SN和UUID)
+message JobInfo {
+  string sn = 1;   // 设备序列号
+  string uuid = 2; // 作业唯一标识
+}
+
+// 本地作业参数
+message NewLocalJobArgs {
+  string job_id = 1;
+  string file_name = 2;
+  bool print_now = 3;
+  bool leveling = 4;
+  bool flow_calibration = 5;
+  bool use_ms = 6;
+  int32 t_count = 7;
+  repeated MaterialInfo ms = 8;  // 材质信息列表
+}
+
+// 新本地作业命令
+message NewLocalJobCmd {
+  NewLocalJobArgs args = 1;
+}
+
+// ========== 设备控制相关命令 ==========
+
+// 灯光控制命令
+message LightControlCmd {
+  enum LightStatus {
+    UNKNOWN = 0;
+    OPEN = 1;   // 开灯
+    CLOSE = 2;  // 关灯
+  }
+
+  LightStatus status = 1;
+}
+
+// 温度控制命令
+message TemperatureControlCmd {
+  int32 platform = 1;      // 平台温度
+  int32 right_nozzle = 2;  // 右喷嘴温度
+  int32 left_nozzle = 3;   // 左喷嘴温度
+  int32 chamber = 4;       // 腔体温度
+}
+
+// 流控制命令 (可能是视频流或数据流)
+message StreamControlCmd {
+  enum StreamAction {
+    UNKNOWN_ACTION = 0;
+    OPEN = 1;   // 开流
+    CLOSE = 2;  // 关流
+  }
+
+  StreamAction action = 1;
+}
+
+// ========== 用户和配置相关命令 ==========
+
+// 用户资料命令
+message UserProfileCmd {
+  string avatar = 1;  // 头像URL
+  string name = 2;    // 用户名
+}
+
+// 设备注销命令 (无参数)
+message DeviceUnregisterCmd {
+  // 空消息体，表示没有额外参数
+}
+
+// 可选：也可以使用 google.protobuf.Empty
+// import "google/protobuf/empty.proto";

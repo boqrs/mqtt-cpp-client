@@ -10,8 +10,7 @@
 
 MqttClient::MqttClient(const std::string &ip, int port, const std::string &client_id):pimpl_(std::make_unique<Impl>(ip, port, client_id)) {
 
-
-    LOG_INFO("[MQTT] 初始化客户端, ip:{}, prt: {}", ip, port);
+    LOG_INFO("[MQTT] init client, ip:{}, prt: {}", ip, port);
 }
 
 MqttClient::~MqttClient()=default;

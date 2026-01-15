@@ -92,6 +92,20 @@ find_package(fmt REQUIRED)
 message(STATUS "找到 fmt 库")
 
 # ------------------------------------------------------------------------------
+# 4. 集成 nlohmann_json 选项
+# ------------------------------------------------------------------------------
+find_package(nlohmann_json 3.2.0 REQUIRED)
+
+# 或者在 find_package 失败时使用备用方法
+if(NOT nlohmann_json_FOUND)
+    # 使用我们安装的路径
+    add_library(nlohmann_json INTERFACE IMPORTED)
+    set_target_properties(nlohmann_json PROPERTIES
+            INTERFACE_INCLUDE_DIRECTORIES "/usr/local/include"
+    )
+endif()
+
+# ------------------------------------------------------------------------------
 # 4. 集成 spdlog 选项
 # ------------------------------------------------------------------------------
 option(ENABLE_SPDLOG "启用 spdlog 日志库" ON)
@@ -413,6 +427,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         Threads::Threads
         ${ZLIB_LIBRARIES}
         ${Protobuf_LIBRARIES}
+        nlohmann_json::nlohmann_json
 )
 
 if(PAHO_MQTT_C_FOUND)

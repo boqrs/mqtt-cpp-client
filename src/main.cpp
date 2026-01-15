@@ -219,7 +219,7 @@ int main() {
 
             // 打印当前进度
             if (counter % 5 == 0) {
-                LOG_INFO("发布第{}条消息, 进度 {}%, 温度: L: {} °C R: {} °C",
+                LOG_INFO("message index: {}, process {}%, temperature: L: {} °C R: {} °C",
                          counter, data.progress.progress, data.temperatures.left_temperature, data.temperatures.right_temperature);
             }
 

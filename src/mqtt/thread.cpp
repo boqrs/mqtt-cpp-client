@@ -165,7 +165,7 @@ void MqttThread::handleMessageSending() {
                 LOG_ERROR("[MQTT Thread] failed to publish: {}", msg.topic);
                 // TODO: 可以考虑将失败的消息重新加入队列,这里简单丢弃
             } else {
-                LOG_ERROR("[MQTT Thread] publish successfully");
+                LOG_INFO("[MQTT Thread] publish successfully");
             }
         } catch (...) {
             LOG_ERROR("[MQTT Thread] failed to publish message");

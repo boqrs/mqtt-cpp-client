@@ -11,7 +11,7 @@
 
 #include "spdlog/spdlog.h"
 #include "logger/logger.h"
-#include "mqtt/device_status_publisher.h"
+#include "mqtt/publisher.h"
 
 
 using namespace std::chrono_literals;
@@ -31,15 +31,15 @@ void signal_handler(int signal)
 // 自定义监听器实现
 class StatusListener : public swan::mqtt::IDeviceStatusListener {
 public:
-    void onStatusChanged(const swan::models::DeviceStatusData& new_status,
-                         const swan::models::DeviceStatusData& old_status,
+    /*void onStatusChanged(const swan::protocol::DeviceStateData& new_status,
+                         const swan::protocol::DeviceStateData& old_status,
                          const std::vector<std::string>& changed_fields) override {
         std::cout << "[Listener] Status changed: ";
         for (const auto& field : changed_fields) {
             std::cout << field << " ";
         }
         std::cout << std::endl;
-    }
+    }*/
 
     void onPublishError(const std::string& topic,
                         const std::string& error) override {
@@ -73,7 +73,7 @@ int main() {
 
     // 配置发布器
     mqtt::DeviceStatusPublisherConfig config;
-    config.broker_ip = "10.33.44.240";
+    config.broker_ip = "10.33.44.104";
     config.broker_port = 18082;
     config.client_id = "swan_printer_001";
     config.username = "admin";
@@ -101,126 +101,113 @@ int main() {
     }
 
     // 模拟设备状态数据
-    models::DeviceStatus status;
-    auto& data = status.getMutableData();
-    data.device.device_id = "printer_001";
-    data.device.printer_name = "SWAN-X1";
-    data.device.sn = "SN2024001";
-    data.device.mac = "00:11:22:33:44:55";
-    data.device.ip_address = "192.168.1.100";
-    data.device.firmware_version = "1.0.0";
-    data.device.status = "printing";
+    swan::protocol::DeviceStateData status;
+    status.device_id = "printer_001";
+    status.printer_name = "SWAN-X1";
+    status.sn = "SN2024001";
+    status.mac = "00:11:22:33:44:55";
+    status.ip_address = "192.168.1.100";
+    status.firmware_version = "1.0.0";
+    status.status = "printing";
 
     // 初始化温度
-    data.temperatures.chamber_temp = 25;
-    data.temperatures.chamber_target_temp = 60;
-    data.temperatures.left_temperature = 200;
-    data.temperatures.left_target_temperature = 210;
-    data.temperatures.right_temperature = 205;
-    data.temperatures.right_target_temperature = 215;
-    data.temperatures.platform_cur_temperature = 60;
-    data.temperatures.platform_target_temperature = 65;
+    status.chamber_temp = 25;
+    status.chamber_target_temp = 60;
+    status.left_temperature = 200;
+    status.left_target_temperature = 210;
+    status.right_temperature = 205;
+    status.right_target_temperature = 215;
+    status.platform_cur_temperature = 60;
+    status.platform_target_temperature = 65;
 
     // 初始化喷嘴温度
-    data.temperatures.nozzle_temps = {200, 205};
-    data.temperatures.nozzle_target_temps = {210, 215};
+    status.nozzle_temps = {200, 205};
+    status.nozzle_target_temps = {210, 215};
 
     // 初始化打印进度
-    data.progress.progress = 0;
-    data.progress.print_layer = 1;
-    data.progress.target_layer = 100;
-    data.progress.estimate_time = 3600;
-    data.progress.actual_duration = 0;
-    data.progress.duration = 3600;
-    data.progress.cumulative_print_time = 100;
-    data.progress.file_name = "test_model.gcode";
-    data.progress.file_path = "/prints/test_model.gcode";
+    status.progress = 0;
+    status.print_layer = 1;
+    status.target_layer = 100;
+    status.estimate_time = 3600;
+    status.actual_duration = 0;
+    status.duration = 3600;
+    status.cumulative_print_time = 100;
+    status.file_name = "test_model.gcode";
+    status.file_path = "/prints/test_model.gcode";
 
     // 初始化材料信息
-    data.materials.left_filament = 500;
-    data.materials.right_filament = 450;
-    data.materials.left_filament_type = "PLA";
-    data.materials.right_filament_type = "PLA";
-    data.materials.cumulative_filament = 1500.5;
+    status.left_filament = 500;
+    status.right_filament = 450;
+    status.left_filament_type = "PLA";
+    status.right_filament_type = "PLA";
+    status.cumulative_filament = 1500.5;
 
     // 其他字段
-    data.camera = 1;
-    data.chamber_fan = 50;
-    data.cooling_fan = 30;
-    data.current_speed = 100;
-    data.entirety_speed = 100;
-    data.estimate_length_left = 500;
-    data.estimate_length_right = 450;
-    data.delay_close = "false";
-    data.delay_time = 0;
-    data.door = "closed";
-    data.external = "connected";
-    data.internal = "ready";
-    data.job_id = "job_001";
-    data.language = "zh-CN";
-    data.lidar = 1;
-    data.light = "on";
-    data.location = "workshop_1";
-    data.measure = "normal";
-    data.model_weight = 100;
-    data.nozzle_count = 2;
-    data.nozzle_model = "0.4mm";
-    data.nozzle_style = 1;
-    data.pid = "printer_001";
-    data.polar_register_code = "polar_123";
-    data.flash_register_code = "flash_456";
-    data.remain_memory = 256.5;
-    data.stream = "rtsp://192.168.1.100:8554/live";
-    data.hls_stream = "http://192.168.1.100:8080/hls/live.m3u8";
-    data.thumbnail_path = "/thumbnails/test_model.jpg";
-    data.tvoc = 50;
-    data.z_axis_compensation = 0;
-    data.filling_amount = 100;
-
-    // 设置事件类型
-    status.setEventType("printing");
-    status.setActionType("status_report");
+    status.camera = 1;
+    status.chamber_fan = 50;
+    status.cooling_fan = 30;
+    status.current_speed = 100;
+    status.entirety_speed = 100;
+    status.estimate_length_left = 500;
+    status.estimate_length_right = 450;
+    status.delay_close = "false";
+    status.delay_time = 0;
+    status.door = "closed";
+    status.external = "connected";
+    status.internal = "ready";
+    status.job_id = "job_001";
+    status.language = "zh-CN";
+    status.lidar = 1;
+    status.light = "on";
+    status.location = "workshop_1";
+    status.measure = "normal";
+    status.model_weight = 100;
+    status.nozzle_count = 2;
+    status.nozzle_model = "0.4mm";
+    status.nozzle_style = 1;
+    status.pid = "printer_001";
+    status.polar_register_code = "polar_123";
+    status.flash_register_code = "flash_456";
+    status.remain_memory = 256.5;
+    status.stream = "rtsp://192.168.1.100:8554/live";
+    status.hls_stream = "http://192.168.1.100:8080/hls/live.m3u8";
+    status.thumbnail_path = "/thumbnails/test_model.jpg";
+    status.tvoc = 50;
+    status.z_axis_compensation = 0;
+    status.filling_amount = 100;
 
     int counter = 0;
     try {
         while (g_running) {
             // 更新状态数据
-            data.progress.progress = (data.progress.progress + 1) % 101;
-            data.progress.actual_duration += 1;
-            data.progress.print_layer = (data.progress.print_layer % 100) + 1;
+            status.progress = (status.progress + 1) % 101;
+            status.actual_duration += 1;
+            status.print_layer = (status.print_layer % 100) + 1;
 
             // 温度模拟变化
-            data.temperatures.left_temperature = 200 + (counter % 10);
-            data.temperatures.right_temperature = 205 + (counter % 10);
-            data.temperatures.chamber_temp = 25 + (counter % 5);
+            status.left_temperature = 200 + (counter % 10);
+            status.right_temperature = 205 + (counter % 10);
+            status.chamber_temp = 25 + (counter % 5);
 
             // 材料消耗模拟
             if (counter % 10 == 0) {
-                if (data.materials.left_filament > 0) {
-                    data.materials.left_filament -= 1;
+                if (status.left_filament > 0) {
+                    status.left_filament -= 1;
                 }
-                if (data.materials.right_filament > 0) {
-                    data.materials.right_filament -= 1;
+                if (status.right_filament > 0) {
+                    status.right_filament -= 1;
                 }
-                data.materials.cumulative_filament += 0.1;
+                status.cumulative_filament += 0.1;
             }
+            auto msg = swan::protocol::MessageFactory::createStateMessage(status);
 
             // 发布状态
-            publisher->updateStatus(status);
-
-            // 每10次发布一个特殊事件
-            if (counter % 10 == 0) {
-                if (counter % 20 == 0) {
-                    publisher->publishEvent("layer_completed");
-                } else {
-                    publisher->publishEvent("progress_update");
-                }
-            }
+            publisher->publish(msg, false);
 
             // 打印当前进度
             if (counter % 5 == 0) {
                 LOG_INFO("message index: {}, process {}%, temperature: L: {} °C R: {} °C",
-                         counter, data.progress.progress, data.temperatures.left_temperature, data.temperatures.right_temperature);
+                         counter, status.progress, status.left_temperature, status.right_temperature);
             }
 
             counter++;

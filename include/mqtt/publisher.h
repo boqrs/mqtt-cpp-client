@@ -8,20 +8,17 @@
 
 #include <memory>
 #include <string>
-#include <functional>
 #include <chrono>
 #include <vector>
-#include <unordered_map>
 
-#include "utils/models/device_status.h"
+#include "utils/models/protocol.h"
 #include "thread.h"
 
 namespace swan {
     namespace mqtt {
-
-/**
- * @brief 设备状态发布配置
- */
+        /**
+         * @brief 设备状态发布配置
+         */
         struct DeviceStatusPublisherConfig {
             // 基础配置
             std::string base_topic = "swan/device/status";
@@ -61,17 +58,17 @@ namespace swan {
             size_t compression_threshold = 1024;        // 压缩阈值（字节）
         };
 
-/**
- * @brief 设备状态变化监听器接口
- */
+        /**
+         * @brief 设备状态变化监听器接口
+         */
         class IDeviceStatusListener {
         public:
             virtual ~IDeviceStatusListener() = default;
 
             // 状态变化回调
-            virtual void onStatusChanged(const models::DeviceStatusData& new_status,
-                                         const models::DeviceStatusData& old_status,
-                                         const std::vector<std::string>& changed_fields) = 0;
+            /* virtual void onStatusChanged(const protocol::DeviceStateData& new_status,
+                                          const protocol::DeviceStateData& old_status,
+                                          const std::vector<std::string>& changed_fields) = 0;*/
 
             // 错误回调
             virtual void onPublishError(const std::string& topic,
@@ -82,11 +79,11 @@ namespace swan {
                                           size_t payload_size) = 0;
         };
 
-/**
- * @brief Protobuf设备状态发布器
- *
- * 负责将设备状态序列化为Protobuf格式并通过MQTT发布
- */
+        /**
+         * @brief Protobuf设备状态发布器
+         *
+         * 负责将设备状态序列化为Protobuf格式并通过MQTT发布
+         */
         class DeviceStatusPublisher {
         public:
             DeviceStatusPublisher();
@@ -119,24 +116,7 @@ namespace swan {
              * @param status 新的设备状态
              * @param force_publish 是否强制发布（忽略变化阈值）
              */
-            void updateStatus(const models::DeviceStatus& status, bool force_publish = false);
-
-            /**
-             * @brief 立即发布当前状态（忽略发布策略）
-             * @param event_type 事件类型（如：status_update, alarm, heartbeat）
-             * @param action_type 动作类型（如：printing, paused, completed）
-             */
-            bool publishImmediately(const std::string& event_type = "status_update",
-                                    const std::string& action_type = "");
-
-            /**
-             * @brief 发布特定事件
-             * @param event_type 事件类型
-             * @param status 状态数据（可选）
-             */
-            bool publishEvent(const std::string& event_type,
-                              const models::DeviceStatusData* status = nullptr);
-
+            void publish(const protocol::UnifiedMessage& status, bool force_publish = false);
             // 配置管理
             void setConfig(const DeviceStatusPublisherConfig& config);
             const DeviceStatusPublisherConfig& getConfig() const;
@@ -159,46 +139,12 @@ namespace swan {
 
             // 工具方法
             static std::string generateTopic(const DeviceStatusPublisherConfig& config,
-                                             const models::DeviceStatus& status,
-                                             const std::string& event_type = "");
+                                             const protocol::DeviceStateData& status);
 
         private:
             // 内部实现
             class Impl;
             std::unique_ptr<Impl> pimpl_;
         };
-
-/**
- * @brief 轻量级发布器（用于资源受限环境）
- */
-        class LightweightStatusPublisher {
-        public:
-            LightweightStatusPublisher(std::shared_ptr<MqttThread> mqtt_thread,
-                                       const std::string& base_topic);
-
-            /**
-             * @brief 直接发布设备状态
-             * @param status 设备状态
-             * @param qos QoS等级
-             * @return 是否发布成功
-             */
-            bool publish(const models::DeviceStatus& status, int qos = 1);
-
-            /**
-             * @brief 发布原始Protobuf数据
-             * @param protobuf_data 序列化后的Protobuf数据
-             * @param topic 主题（可选，使用默认主题如果为空）
-             * @param qos QoS等级
-             * @return 是否发布成功
-             */
-            bool publishRaw(const std::string& protobuf_data,
-                            const std::string& topic = "",
-                            int qos = 1);
-
-        private:
-            std::shared_ptr<MqttThread> mqtt_thread_;
-            std::string base_topic_;
-        };
-
-    } // namespace mqtt
+    }
 } // namespace swan

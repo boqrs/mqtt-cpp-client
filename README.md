@@ -36,7 +36,7 @@ project/
 │ └── device_status.proto # Protobuf消息定义
 ├── include/
 │ ├── mqtt/
-│ │ ├── device_status_publisher.h
+│ │ ├── publisher.h
 │ │ ├── client.h
 │ │ ├── impl.h
 │ │ └── thread.h
@@ -45,20 +45,42 @@ project/
 │ │ └── data_transformer.h
 │ └── utils/
 │ └── models/
-│ └── device_status.h
+│ └── protocol.h
 ├── src/
 │ ├── mqtt/
 │ │ ├── impl.cpp
 │ │ ├── client.cpp
 │ │ ├── thread.cpp
-│ │ └── device_status_publisher.cpp
+│ │ └── publisher.cpp
 │ ├── processor/
 │ │ ├── data_validator.cpp
 │ │ └── data_transformer.cpp
 │ └── utils/
 │ └── models/
-│ └── device_status.cpp
 └── docker/
 └── Dockerfile # Docker容器化配置
 
 ```
+
+## 协议结构
+       系统中的协议分为两种，一种是上行协议(设备端-->服务端)，另一种是下行协议(服务端到-->设备端)。考虑到集群
+    的资源限制本着客户端尽量为服务端的性能考虑的原则，设备和 MQTT 集群的交互只是用一个 topic，这样尽量减少设备数量
+    对应的 topic 数量限制。MQTT 本身支持消息抑制功能，也就是客户端发送的消息可以不让本客户端收到这样设备向 topic 发送的
+    状态数据一定不会回环到设备本身，toppic 的基本规则如下:
+    形如: swan/device/{modename}/{sn}/state-cmd
+    其中modename是设备的信号，sn 为设备的序列号
+   
+   1. 协议设计:
+      协议层面为了兼顾上下行消息，总体的协议遵循如下标准:
+      ```json
+      {
+        "messageType": "device_state",
+        "payload": {
+         "actionType": "device_status"  
+      }
+      }
+      ```
+      为了方便阅读我们以json的形式描述，如上其中messageType其实表述的是消息的类型，上行消息为device_state
+      actionType表示子协议名称。下行消息的messageType是device_cmd actionType是具体的命令名称
+
+   

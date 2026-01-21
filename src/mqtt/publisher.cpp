@@ -1,13 +1,19 @@
 //
 // Created by wave on 2026/1/12.
 //
-#include "mqtt/device_status_publisher.h"
 #include <algorithm>
 #include <chrono>
 #include <sstream>
 #include <iomanip>
-#include <zlib.h>  // 用于压缩（如果启用）
+#include <zlib.h>
+#include "logger/logger.h"
+#include "mqtt/publisher.h"
 
+//TODO: 这里有问题，状态的发布数据分为两种情况
+//      1. 一种是需要立刻发送的同步消息比较急，可能是将来的告警信息 action_type=alarm
+//      2. 一种是常规的状态更新，会被放到消息缓冲链表里面，由 mqtt 线程按顺序发布
+//      3. 需要按照上面两需求修改发布逻辑, 并且由发布标记决定是否立刻发布
+//      4. 到发布器的时候不应该再去解析协议中的内容决定怎么走
 namespace swan {
     namespace mqtt {
 
@@ -86,10 +92,10 @@ namespace swan {
                 is_running_ = true;
 
                 // 如果启用周期性发布，启动定时器线程
-                if (config_.mode == DeviceStatusPublisherConfig::PublishMode::PERIODIC ||
+                /*if (config_.mode == DeviceStatusPublisherConfig::PublishMode::PERIODIC ||
                     config_.mode == DeviceStatusPublisherConfig::PublishMode::HYBRID) {
                     timer_thread_ = std::thread([this]() { timerLoop(); });
-                }
+                }*/
 
                 return true;
             }
@@ -97,36 +103,43 @@ namespace swan {
             void stop() {
                 is_running_ = false;
 
-                if (timer_thread_.joinable()) {
+                /*if (timer_thread_.joinable()) {
                     timer_thread_.join();
-                }
+                }*/
 
                 if (mqtt_thread_) {
                     mqtt_thread_->stop();
                 }
             }
 
-            void updateStatus(const models::DeviceStatus& status, bool force_publish) {
+            void pulish(const protocol::UnifiedMessage& msg, bool force_publish) {
                 std::lock_guard<std::mutex> lock(status_mutex_);
 
                 // 保存旧状态用于比较
-                models::DeviceStatus old_status = current_status_;
-                current_status_ = status;
+                protocol::DeviceStateData old_status = current_status_;
+
+                if (!msg.isDeviceStateMessage()) {
+                    LOG_ERROR("only support state to publish");
+                    return;
+                }
+
+                current_status_ = *msg.getDeviceStateData();//TODO: 这里是不是有问题～～～～～～
 
                 // 检查哪些字段发生了变化
-                auto changed_fields = detectChanges(old_status, status);
+                auto changed_fields = detectChanges(old_status, current_status_);
 
                 // 通知监听器
                 for (auto& listener : listeners_) {
                     if (listener) {
-                        listener->onStatusChanged(status.getData(),
-                                                  old_status.getData(),
-                                                  changed_fields);
+                        /*listener->onStatusChanged(status,
+                                                  old_status,
+                                                  changed_fields);*/
                     }
                 }
 
                 // 根据发布模式决定是否发布
                 bool should_publish = false;
+                bool is_sync = false;//后续根据消息级别修改是否同步发送
 
                 switch (config_.mode) {
                     case DeviceStatusPublisherConfig::PublishMode::EVENT_BASED:
@@ -134,71 +147,42 @@ namespace swan {
                         break;
 
                     case DeviceStatusPublisherConfig::PublishMode::PERIODIC:
-                        // 周期性发布由定时器处理
+                        // 周期性发布，后续再支持
+                        //should_publish = true;
                         break;
 
                     case DeviceStatusPublisherConfig::PublishMode::HYBRID:
                         should_publish = (!changed_fields.empty() &&
-                                          meetsThreshold(changed_fields, old_status, status)) ||
+                                          meetsThreshold(changed_fields, old_status, current_status_)) ||
                                          force_publish;
                         break;
                 }
 
                 if (should_publish) {
-                    publishStatus(status, "status_update");
+                    publishMsg(msg, is_sync);
                 }
-            }
-
-            bool publishImmediately(const std::string& event_type,
-                                    const std::string& action_type) {
-                std::lock_guard<std::mutex> lock(status_mutex_);
-
-                if (event_type != "status_update") {
-                    current_status_.setEventType(event_type);
-                }
-
-                if (!action_type.empty()) {
-                    current_status_.setActionType(action_type);
-                }
-
-                return publishStatus(current_status_, event_type);
-            }
-
-            bool publishEvent(const std::string& event_type,
-                              const models::DeviceStatusData* status) {
-                models::DeviceStatus publish_status;
-
-                if (status) {
-                    publish_status.setData(*status);
-                } else {
-                    std::lock_guard<std::mutex> lock(status_mutex_);
-                    publish_status = current_status_;
-                }
-
-                publish_status.setEventType(event_type);
-                return publishStatus(publish_status, event_type);
             }
 
         private:
             // 检测状态变化
-            std::vector<std::string> detectChanges(const models::DeviceStatus& old_status,
-                                                   const models::DeviceStatus& new_status) {
+            std::vector<std::string> detectChanges(const protocol::DeviceStateData& old_status,
+                                                   const protocol::DeviceStateData& new_status) {
                 std::vector<std::string> changes;
 
                 // 简化的变化检测，实际应该比较所有重要字段
-                const auto& old_data = old_status.getData();
-                const auto& new_data = new_status.getData();
+                const auto& old_data = old_status;
+                const auto& new_data = new_status;
 
-                if (old_data.temperatures.chamber_temp != new_data.temperatures.chamber_temp) {
+                if (old_data.chamber_temp != new_data.chamber_temp) {
                     changes.push_back("chamber_temp");
                 }
 
-                if (old_data.progress.progress != new_data.progress.progress) {
+                if (old_data.progress != new_data.progress) {
                     changes.push_back("progress");
                 }
 
-                if (old_data.materials.left_filament != new_data.materials.left_filament ||
-                    old_data.materials.right_filament != new_data.materials.right_filament) {
+                if (old_data.left_filament != new_data.left_filament ||
+                    old_data.right_filament != new_data.right_filament) {
                     changes.push_back("filament");
                 }
 
@@ -209,22 +193,22 @@ namespace swan {
 
             // 检查是否达到发布阈值
             bool meetsThreshold(const std::vector<std::string>& changed_fields,
-                                const models::DeviceStatus& old_status,
-                                const models::DeviceStatus& new_status) {
-                const auto& old_data = old_status.getData();
-                const auto& new_data = new_status.getData();
+                                const protocol::DeviceStateData& old_status,
+                                const protocol::DeviceStateData& new_status) {
+                const auto& old_data = old_status;
+                const auto& new_data = new_status;
 
                 for (const auto& field : changed_fields) {
                     if (field == "chamber_temp") {
                         float diff = std::abs(static_cast<float>(
-                                                      new_data.temperatures.chamber_temp -
-                                                      old_data.temperatures.chamber_temp));
+                                                      new_data.chamber_temp -
+                                                      old_data.chamber_temp));
                         if (diff >= config_.filters.temperature_threshold) {
                             return true;
                         }
                     } else if (field == "progress") {
                         int diff = std::abs(static_cast<int>(
-                                                    new_data.progress.progress - old_data.progress.progress));
+                                                    new_data.progress - old_data.progress));
                         if (diff >= config_.filters.progress_threshold) {
                             return true;
                         }
@@ -236,8 +220,8 @@ namespace swan {
             }
 
             // 发布状态到MQTT
-            bool publishStatus(const models::DeviceStatus& status,
-                               const std::string& event_type) {
+            bool publishMsg(const protocol::UnifiedMessage& msg,
+                               bool is_sync) {
                 if (!mqtt_thread_ || !mqtt_thread_->isConnected()) {
                     return false;
                 }
@@ -245,7 +229,7 @@ namespace swan {
                 // 序列化为Protobuf
                 std::string serialized_data;
                 try {
-                    serialized_data = status.serializeToString();
+                    serialized_data = msg.toString();
                 } catch (const std::exception& e) {
                     std::cerr << "[Publisher] Failed to serialize status: "
                               << e.what() << std::endl;
@@ -263,11 +247,19 @@ namespace swan {
                 }
 
                 // 生成主题
-                std::string topic = generateTopic(config_, status, event_type);
+                std::string topic = generateTopic(config_, *msg.getDeviceStateData());
+                if (topic.empty()) {
+                    LOG_ERROR("failed to generate Topic, sn is empty ");
+                    return false;
+                }
 
-                // 发布消息
-                bool success = mqtt_thread_->publishSync(
-                        topic, serialized_data, config_.qos, 2000);
+                bool success = false;
+                if (!is_sync) {
+                    mqtt_thread_->publish(topic, serialized_data, config_.qos, 0);
+                }else {
+                    success = mqtt_thread_->publishSync(
+        topic, serialized_data, config_.qos, 2000);
+                }
 
                 // 更新统计信息
                 {
@@ -303,6 +295,7 @@ namespace swan {
             }
 
             // 定时器循环（用于周期性发布）
+            /*
             void timerLoop() {
                 while (is_running_) {
                     std::this_thread::sleep_for(
@@ -313,7 +306,7 @@ namespace swan {
                         publishStatus(current_status_, "heartbeat");
                     }
                 }
-            }
+            }*/
 
             void handleMqttMessage(const std::string& topic,
                                    const std::string& payload) {
@@ -328,7 +321,7 @@ namespace swan {
             // 成员变量
             DeviceStatusPublisherConfig config_;
             std::unique_ptr<MqttThread> mqtt_thread_;
-            models::DeviceStatus current_status_;
+            protocol::DeviceStateData current_status_;
             std::vector<std::shared_ptr<IDeviceStatusListener>> listeners_;
             Statistics stats_;
 
@@ -336,7 +329,7 @@ namespace swan {
             std::mutex stats_mutex_;
             std::mutex listener_mutex_;
 
-            std::thread timer_thread_;
+           // std::thread timer_thread_;
             std::atomic<bool> is_running_{false};
             std::chrono::steady_clock::time_point last_publish_time_;
         };
@@ -361,19 +354,9 @@ namespace swan {
             pimpl_->stop();
         }
 
-        void DeviceStatusPublisher::updateStatus(const models::DeviceStatus& status,
+        void DeviceStatusPublisher::publish(const protocol::UnifiedMessage& msg,
                                                  bool force_publish) {
-            pimpl_->updateStatus(status, force_publish);
-        }
-
-        bool DeviceStatusPublisher::publishImmediately(const std::string& event_type,
-                                                       const std::string& action_type) {
-            return pimpl_->publishImmediately(event_type, action_type);
-        }
-
-        bool DeviceStatusPublisher::publishEvent(const std::string& event_type,
-                                                 const models::DeviceStatusData* status) {
-            return pimpl_->publishEvent(event_type, status);
+            pimpl_->pulish(msg, force_publish);
         }
 
         void DeviceStatusPublisher::setConfig(const DeviceStatusPublisherConfig& config) {
@@ -406,56 +389,17 @@ namespace swan {
 
         std::string DeviceStatusPublisher::generateTopic(
                 const DeviceStatusPublisherConfig& config,
-                const models::DeviceStatus& status,
-                const std::string& event_type) {
+                const protocol::DeviceStateData& status) {
             std::stringstream topic;
             topic << config.base_topic;
 
-            // 添加设备ID
-            if (!status.getData().device.device_id.empty()) {
-                topic << "/" << status.getData().device.device_id;
+            if (!status.sn.empty()) {
+                topic << "/" << status.sn;
+            }else {
+                return "";
             }
-
-            // 添加事件类型
-            if (!event_type.empty()) {
-                topic << "/" << event_type;
-            } else if (!status.getEventType().empty()) {
-                topic << "/" << status.getEventType();
-            }
-
-            // 添加时间戳
-            topic << "/" << getTimestampString();
 
             return topic.str();
-        }
-
-// LightweightStatusPublisher 实现
-        LightweightStatusPublisher::LightweightStatusPublisher(
-                std::shared_ptr<MqttThread> mqtt_thread,
-                const std::string& base_topic)
-                : mqtt_thread_(mqtt_thread), base_topic_(base_topic) {}
-
-        bool LightweightStatusPublisher::publish(const models::DeviceStatus& status,
-                                                 int qos) {
-            if (!mqtt_thread_ || !mqtt_thread_->isConnected()) {
-                return false;
-            }
-
-            std::string serialized = status.serializeToString();
-            std::string topic = base_topic_ + "/" + status.getData().device.device_id;
-
-            return mqtt_thread_->publish(topic, serialized, qos);
-        }
-
-        bool LightweightStatusPublisher::publishRaw(const std::string& protobuf_data,
-                                                    const std::string& topic,
-                                                    int qos) {
-            if (!mqtt_thread_ || !mqtt_thread_->isConnected()) {
-                return false;
-            }
-
-            std::string final_topic = topic.empty() ? base_topic_ : topic;
-            return mqtt_thread_->publish(final_topic, protobuf_data, qos);
         }
 
     } // namespace mqtt

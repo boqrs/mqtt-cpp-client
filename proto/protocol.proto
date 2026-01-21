@@ -1,0 +1,222 @@
+syntax = "proto3";
+
+package swan.device;
+
+// ==================== 通用数据结构 ====================
+
+// 材料站槽位信息
+message SlotInfos {
+  bool has_filament = 1;
+  string material_color = 2;
+  string material_name = 3;
+  uint32 slot_id = 4;
+}
+
+// 材料站信息
+message MatlStationInfo {
+  uint32 current_load_slot = 1;
+  uint32 current_slot = 2;
+  uint32 slot_cnt = 3;
+  repeated SlotInfos slot_infos = 4;
+  uint32 state_action = 5;
+  uint32 state_step = 6;
+}
+
+// 设备状态数据
+message DeviceStateData {
+  uint32 actual_duration = 1;
+  uint32 camera = 2;
+  uint32 chamber_fan = 3;
+  uint32 chamber_target_temp = 4;
+  int32 chamber_temp = 5;
+  uint32 cooling_fan = 6;
+  double cumulative_filament = 7;
+  uint32 cumulative_print_time = 8;
+  uint32 current_speed = 9;
+  string delay_close = 10;
+  uint32 delay_time = 11;
+  string device_i_d = 12;
+  string door = 13;
+  uint32 duration = 14;
+  uint32 entirety_speed = 15;
+  string error_code = 16;
+  uint32 estimate_length_left = 17;
+  uint32 estimate_length_right = 18;
+  uint32 estimate_time = 19;
+  string external = 20;
+  string file_name = 21;
+  string file_path = 22;
+  uint32 filling_amount = 23;
+  string firmware_version = 24;
+  string flash_register_code = 25;
+  string hls_stream = 26;
+  string internal = 27;
+  string ip_address = 28;
+  string job_i_d = 29;
+  string language = 30;
+  uint32 left_filament = 31;
+  string left_filament_type = 32;
+  uint32 left_target_temperature = 33;
+  uint32 left_temperature = 34;
+  uint32 lidar = 35;
+  string light = 36;
+  string location = 37;
+  string mac = 38;
+  MatlStationInfo matl_station_info = 39;
+  string measure = 40;
+  uint32 model_weight = 41;
+  uint32 nozzle_count = 42;
+  string nozzle_model = 43;
+  uint32 nozzle_style = 44;
+  repeated uint32 nozzle_target_temps = 45;
+  repeated uint32 nozzle_temps = 46;
+  string pid = 47;
+  uint32 platform_cur_temperature = 48;
+  uint32 platform_target_temperature = 49;
+  string polar_register_code = 50;
+  uint32 print_layer = 51;
+  string printer_name = 52;
+  uint32 progress = 53;
+  double remain_memory = 54;
+  uint32 right_filament = 55;
+  string right_filament_type = 56;
+  uint32 right_target_temperature = 57;
+  uint32 right_temperature = 58;
+  string sn = 59;
+  string status = 60;
+  string stream = 61;
+  uint32 target_layer = 62;
+  string thumbnail_path = 63;
+  uint32 tvoc = 64;
+  uint32 z_axis_compensation = 65;
+}
+
+// ==================== 下行指令结构 ====================
+
+// 材质信息 (MS - Material Slot)
+message MaterialInfo {
+  int32 slot = 1;           // 料槽编号
+  int32 t_num = 2;          // 工具头编号
+  string s_rgb = 3;         // 起始颜色
+  string t_rgb = 4;         // 目标颜色
+  string material_type = 5; // 材质类型，如 "PLA"
+}
+
+// 远程作业参数
+message NewJobArgs {
+  string filename = 1;
+  string file_md5 = 2;
+  string filepath = 3;
+  string thumb_path = 4;
+  bool print_now = 5;
+  bool leveling = 6;
+  bool flow_calibration = 7;
+  bool use_ms = 8;
+  int32 t_count = 9;
+  repeated MaterialInfo ms = 10;  // 材质信息列表
+}
+
+// 作业信息 (包含SN和UUID)
+message JobInfo {
+  string sn = 1;   // 设备序列号
+  string uuid = 2; // 作业唯一标识
+}
+
+// 新远程作业命令
+message NewJobCmd {
+  repeated JobInfo job_info = 1;  // 作业信息列表
+  NewJobArgs args = 2;
+}
+
+// 本地作业参数
+message NewLocalJobArgs {
+  string job_id = 1;
+  string file_name = 2;
+  bool print_now = 3;
+  bool leveling = 4;
+  bool flow_calibration = 5;
+  bool use_ms = 6;
+  int32 t_count = 7;
+  repeated MaterialInfo ms = 8;  // 材质信息列表
+}
+
+// 新本地作业命令
+message NewLocalJobCmd {
+  NewLocalJobArgs args = 1;
+}
+
+// 灯光控制命令
+message LightControlCmd {
+  enum LightStatus {
+    UNKNOWN = 0;
+    OPEN = 1;   // 开灯
+    CLOSE = 2;  // 关灯
+  }
+
+  LightStatus status = 1;
+}
+
+// 温度控制命令
+message TemperatureControlCmd {
+  int32 platform = 1;      // 平台温度
+  int32 right_nozzle = 2;  // 右喷嘴温度
+  int32 left_nozzle = 3;   // 左喷嘴温度
+  int32 chamber = 4;       // 腔体温度
+}
+
+// 流控制命令 (可能是视频流或数据流)
+message StreamControlCmd {
+  enum StreamAction {
+    UNKNOWN_ACTION = 0;
+    OPEN = 1;   // 开流
+    CLOSE = 2;  // 关流
+  }
+
+  StreamAction action = 1;
+}
+
+// 用户资料命令
+message UserProfileCmd {
+  string avatar = 1;  // 头像URL
+  string name = 2;    // 用户名
+}
+
+// 设备注销命令
+message DeviceUnregisterCmd {
+  // 空消息体，表示没有额外参数
+}
+
+// 主控制指令，使用 oneof 处理不同类型的命令
+message ControlCommand {
+  string cmd = 1;  // 命令名称
+
+  oneof command_args {
+    NewJobCmd new_job = 2;
+    NewLocalJobCmd new_local_job = 3;
+    LightControlCmd light_control = 4;
+    TemperatureControlCmd temperature_control = 5;
+    StreamControlCmd stream_control = 6;
+    UserProfileCmd user_profile = 7;
+    DeviceUnregisterCmd device_unregister = 8;
+  }
+}
+
+// ==================== 统一消息格式 ====================
+
+// 负载消息
+message Payload {
+  string action_type = 1;  // 对于上行："device_status", 对于下行：具体指令名称
+  oneof data {
+    DeviceStateData device_state = 2;  // 上行：设备状态数据
+    ControlCommand device_cmd = 3;     // 下行：控制指令
+  }
+}
+
+// 统一消息格式
+message UnifiedMessage {
+  string message_type = 1;  // "device_state" 或 "device_cmd"
+  string name = 2;          // 对于上行：空字符串；对于下行：指令名称
+  Payload payload = 3;
+  string timestamp = 4;     // 可选：消息时间戳
+  string request_id = 5;    // 可选：请求ID，用于追踪
+}

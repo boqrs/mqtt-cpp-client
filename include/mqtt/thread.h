@@ -25,7 +25,6 @@ struct MqttMessage{
 
 class MqttThread{
 public:
-    //TODO: 这个考虑定义到类外面
     using MessageCallback = std::function<void(const std::string& topic,
                                                const std::string& payload)>;
 
@@ -96,7 +95,6 @@ private:
     std::condition_variable m_queue_cv;
 
 
-    //TODO： 这个结构是不是放在其他地方合适
     struct SyncPublish {
         std::string topic;
         std::string payload;

@@ -281,32 +281,61 @@ else()
 endif()
 
 # ------------------------------------------------------------------------------
-# 8. 数据处理器模块 (data_processor)
+# 8. 命令模块 (command)
 # ------------------------------------------------------------------------------
-file(GLOB DATA_PROCESSOR_SRCS
-        ${SOURCE_ROOT}/processor/*.cpp
-        ${SOURCE_ROOT}/processor/**/*.cpp
+file(GLOB DEVICE_COMMAND_SRCS
+        ${SOURCE_ROOT}/command/*.cpp
+        ${SOURCE_ROOT}/command/**/*.cpp
 )
 
-if(DATA_PROCESSOR_SRCS)
+if(DEVICE_COMMAND_SRCS)
     message(STATUS "找到数据处理器源文件，创建数据处理器库...")
 
-    add_library(data_processor STATIC ${DATA_PROCESSOR_SRCS})
+    add_library(device_command STATIC ${DEVICE_COMMAND_SRCS})
 
-    target_include_directories(data_processor PUBLIC
+    target_include_directories(device_command PUBLIC
             ${INCLUDE_DIR}
             ${PROTO_GEN_DIR}
             ${CMAKE_BINARY_DIR}/generated
     )
 
-    target_link_libraries(data_processor PUBLIC
+    target_link_libraries(device_command PUBLIC
             proto_messages
             embedded_logger
     )
 
-    message(STATUS "数据处理器库创建完成: data_processor")
+    message(STATUS "设备命令管理创建完成: device_command")
 else()
-    message(WARNING "未找到数据处理器源文件")
+    message(WARNING "未找到设备命令文件")
+endif()
+
+# ------------------------------------------------------------------------------
+# 8. 业务模块 (service)
+# ------------------------------------------------------------------------------
+file(GLOB DEVICE_SERVICE_SRCS
+        ${SOURCE_ROOT}/service/*.cpp
+        ${SOURCE_ROOT}/service/**/*.cpp
+)
+
+if(DEVICE_SERVICE_SRCS)
+    message(STATUS "找到设备业务源文件，创建设备业务库...")
+
+    add_library(device_service STATIC ${DEVICE_SERVICE_SRCS})
+
+    target_include_directories(device_service PUBLIC
+            ${INCLUDE_DIR}
+            ${PROTO_GEN_DIR}
+            ${CMAKE_BINARY_DIR}/generated
+    )
+
+    target_link_libraries(device_service PUBLIC
+            proto_messages
+            embedded_logger
+    )
+
+    message(STATUS "设备服务库创建完成: device_service")
+else()
+    message(WARNING "未找到设备服务源文件")
 endif()
 
 # ------------------------------------------------------------------------------
@@ -333,7 +362,8 @@ if(MQTT_PUBLISHER_SRCS)
     endif()
 
     target_link_libraries(mqtt_publisher PUBLIC
-            data_processor
+            device_command
+            device_service
             proto_messages
             embedded_logger
             ${ZLIB_LIBRARIES}
@@ -434,7 +464,6 @@ endif()
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
         mqtt_publisher
-        data_processor
         proto_messages
         embedded_logger
         Threads::Threads
@@ -507,8 +536,11 @@ message(STATUS "    - proto_messages: Protobuf消息库")
 if(TARGET embedded_logger)
     message(STATUS "    - embedded_logger: 日志系统")
 endif()
-if(TARGET data_processor)
-    message(STATUS "    - data_processor: 数据处理器")
+if(TARGET device_command)
+    message(STATUS "    - device_command: 设备命令")
+endif()
+if(TARGET device_service)
+    message(STATUS "    - device_service: 设备命令业务")
 endif()
 if(TARGET mqtt_publisher)
     message(STATUS "    - mqtt_publisher: MQTT发布器")

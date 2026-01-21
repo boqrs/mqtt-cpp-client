@@ -1,43 +1,38 @@
 //
 // Created by wave on 2026/1/8.
 //
-#include <iostream>
 #include <utility>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include "logger/logger.h"
 #include "mqtt/client.h"
 
-MqttClient::MqttClient(const std::string &ip, int port, const std::string &client_id):pimpl_(std::make_unique<Impl>(ip, port, client_id)) {
+MqttClient::MqttClient(const std::string& ip, int port, const std::string& client_id)
+    : pimpl_(std::make_unique<Impl>(ip, port, client_id)) {}
 
-    LOG_INFO("[MQTT] init client, ip:{}, prt: {}", ip, port);
-}
+MqttClient::~MqttClient() = default;
 
-MqttClient::~MqttClient()=default;
 MqttClient::MqttClient(MqttClient&& other) noexcept = default;
 MqttClient& MqttClient::operator=(MqttClient &&) noexcept = default;
 
-bool  MqttClient::connect(const std::string &username, const std::string &password) {
- return pimpl_->connect(username, password);
+bool MqttClient::connect(const std::string& username, const std::string& password) const {
+    return pimpl_->connect(username, password);
 }
 
-bool MqttClient::publish(const std::string &topic, const std::string &payload, int qos) {
+void MqttClient::disconnect() const {
+    pimpl_->disconnect();
+}
+
+bool MqttClient::publish(const std::string& topic, const std::string& payload, int qos) const {
     return pimpl_->publish(topic, payload, qos);
 }
 
-bool MqttClient::subscribe(const std::string &topic, int qos) {
-    return pimpl_->subscribe(topic, qos);
+bool MqttClient::subscribe(const std::string& topic, int qos, bool no_local) const {
+    return pimpl_->subscribe(topic, qos, no_local);
 }
 
-void MqttClient::disconnect() {
-    pimpl_->disconnect_internal();
-}
-
-void MqttClient::setMessageCallback(messageCallback cb) {
+void MqttClient::setMessageCallback(messageCallback cb) const {
     pimpl_->user_cb = std::move(cb);
 }
 
-void MqttClient::yield(int timeout_ms) {
+void MqttClient::yield(int timeout_ms) const {
     pimpl_->yield(timeout_ms);
 }
 

@@ -8,6 +8,7 @@
 #include <zlib.h>
 #include "logger/logger.h"
 #include "mqtt/publisher.h"
+#include "config.h"
 
 //TODO: 这里有问题，状态的发布数据分为两种情况
 //      1. 一种是需要立刻发送的同步消息比较急，可能是将来的告警信息 action_type=alarm
@@ -247,7 +248,7 @@ namespace swan {
                 }
 
                 // 生成主题
-                std::string topic = generateTopic(config_, *msg.getDeviceStateData());
+                std::string topic = generateTopic(config_);
                 if (topic.empty()) {
                     LOG_ERROR("failed to generate Topic, sn is empty ");
                     return false;
@@ -293,20 +294,6 @@ namespace swan {
 
                 return success;
             }
-
-            // 定时器循环（用于周期性发布）
-            /*
-            void timerLoop() {
-                while (is_running_) {
-                    std::this_thread::sleep_for(
-                            std::chrono::milliseconds(config_.publish_interval_ms));
-
-                    if (is_running_ && mqtt_thread_ && mqtt_thread_->isConnected()) {
-                        std::lock_guard<std::mutex> lock(status_mutex_);
-                        publishStatus(current_status_, "heartbeat");
-                    }
-                }
-            }*/
 
             void handleMqttMessage(const std::string& topic,
                                    const std::string& payload) {
@@ -388,16 +375,11 @@ namespace swan {
         }
 
         std::string DeviceStatusPublisher::generateTopic(
-                const DeviceStatusPublisherConfig& config,
-                const protocol::DeviceStateData& status) {
+                const DeviceStatusPublisherConfig& config) {
             std::stringstream topic;
             topic << config.base_topic;
 
-            if (!status.sn.empty()) {
-                topic << "/" << status.sn;
-            }else {
-                return "";
-            }
+            topic << "/" << DEVICE_MODE<<"/"<<DEVICE_SN;
 
             return topic.str();
         }

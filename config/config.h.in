@@ -26,5 +26,9 @@
 #define STRINGIFY_(x) #x
 #define STRINGIFY(x) STRINGIFY_(x)
 
+// 设备配置信息
+#define DEVICE_MODE "@DEVICE_MODE@"
+#define DEVICE_SN "@DEVICE_SN@"
+
 // 版本信息字符串
 #define PROJECT_VERSION_STRING PROJECT_NAME " v" STRINGIFY(PROJECT_VERSION)

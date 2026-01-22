@@ -310,7 +310,7 @@ else()
 endif()
 
 # ------------------------------------------------------------------------------
-# 8. 业务模块 (service)
+# 9. 业务模块 (service)
 # ------------------------------------------------------------------------------
 file(GLOB DEVICE_SERVICE_SRCS
         ${SOURCE_ROOT}/service/*.cpp
@@ -339,7 +339,7 @@ else()
 endif()
 
 # ------------------------------------------------------------------------------
-# 9. MQTT发布器模块 (mqtt_publisher)
+# 10. MQTT发布器模块 (mqtt_publisher)
 # ------------------------------------------------------------------------------
 file(GLOB MQTT_PUBLISHER_SRCS
         ${SOURCE_ROOT}/mqtt/*.cpp
@@ -386,50 +386,22 @@ endif()
 # ------------------------------------------------------------------------------
 # 10. 生成配置头文件
 # ------------------------------------------------------------------------------
+# 定义生成目录变量，供所有目标使用
+set(GENERATED_CONFIG_DIR ${CMAKE_BINARY_DIR}/generated)
+
+set(DEVICE_MODE "ad5x")          # 固定值
+set(DEVICE_SN "SNWMOD12332211222")      # 固定序列号
+
+# 确保目录存在
+file(MAKE_DIRECTORY ${GENERATED_CONFIG_DIR})
+
+# 核心：生成 config.h (从 .in 模板)
 configure_file(
         ${CMAKE_CURRENT_SOURCE_DIR}/config/config.h.in
-        ${CMAKE_BINARY_DIR}/generated/config.h
+        ${GENERATED_CONFIG_DIR}/config.h
         @ONLY
 )
-
-file(WRITE ${CMAKE_BINARY_DIR}/generated/build_config.h
-        "// 自动生成的构建配置
-#pragma once
-
-// 项目信息
-#define PROJECT_NAME \"${PROJECT_NAME}\"
-#define PROJECT_VERSION \"${PROJECT_VERSION}\"
-#define PROJECT_BUILD_TYPE \"${CMAKE_BUILD_TYPE}\"
-#define PROJECT_COMPILER \"${CMAKE_CXX_COMPILER_ID}\"
-
-// 构建时间
-#define BUILD_TIMESTAMP __TIMESTAMP__
-
-// 功能特性
-#ifdef DEBUG_BUILD
-#define ENABLE_DEBUG 1
-#define LOG_LEVEL_DEBUG 1
-#else
-#define ENABLE_DEBUG 0
-#define LOG_LEVEL_INFO 1
-#endif
-
-#if ${ENABLE_SPDLOG}
-#define USE_SPDLOG 1
-#else
-#define USE_SPDLOG 0
-#endif
-
-#if ${ENABLE_MQTT_5}
-#define USE_MQTT_5 1
-#else
-#define USE_MQTT_5 0
-#endif
-
-// 辅助宏
-#define STRINGIFY(x) #x
-#define TOSTRING(x) STRINGIFY(x)
-")
+message(STATUS "配置头文件将生成于: ${GENERATED_CONFIG_DIR}/config.h")
 
 # ------------------------------------------------------------------------------
 # 11. 主程序
@@ -447,6 +419,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         ${INCLUDE_DIR}
         ${PROTO_GEN_DIR}
         ${CMAKE_BINARY_DIR}/generated
+        ${GENERATED_CONFIG_DIR}
 )
 
 if(ENABLE_SPDLOG)

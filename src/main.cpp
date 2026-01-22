@@ -12,6 +12,7 @@
 #include "spdlog/spdlog.h"
 #include "logger/logger.h"
 #include "mqtt/publisher.h"
+#include "config.h"
 
 
 using namespace std::chrono_literals;
@@ -31,15 +32,6 @@ void signal_handler(int signal)
 // 自定义监听器实现
 class StatusListener : public swan::mqtt::IDeviceStatusListener {
 public:
-    /*void onStatusChanged(const swan::protocol::DeviceStateData& new_status,
-                         const swan::protocol::DeviceStateData& old_status,
-                         const std::vector<std::string>& changed_fields) override {
-        std::cout << "[Listener] Status changed: ";
-        for (const auto& field : changed_fields) {
-            std::cout << field << " ";
-        }
-        std::cout << std::endl;
-    }*/
 
     void onPublishError(const std::string& topic,
                         const std::string& error) override {
@@ -104,7 +96,7 @@ int main() {
     swan::protocol::DeviceStateData status;
     status.device_id = "printer_001";
     status.printer_name = "SWAN-X1";
-    status.sn = "SN2024001";
+    status.sn = DEVICE_SN;
     status.mac = "00:11:22:33:44:55";
     status.ip_address = "192.168.1.100";
     status.firmware_version = "1.0.0";

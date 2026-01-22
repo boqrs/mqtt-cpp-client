@@ -21,7 +21,7 @@ namespace swan {
          */
         struct DeviceStatusPublisherConfig {
             // 基础配置
-            std::string base_topic = "swan/device/status";
+            std::string base_topic = "swan/device";
             std::string client_id;
             std::string broker_ip;
             std::string username;
@@ -138,8 +138,7 @@ namespace swan {
             void resetStatistics();
 
             // 工具方法
-            static std::string generateTopic(const DeviceStatusPublisherConfig& config,
-                                             const protocol::DeviceStateData& status);
+            static std::string generateTopic(const DeviceStatusPublisherConfig& config);
 
         private:
             // 内部实现

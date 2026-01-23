@@ -88,8 +88,8 @@ public:
     }
 
 private:
-    business::JobArgs convertToJobArgs(const device::NewJobArgs& protoArgs) {
-        business::JobArgs args;
+    service::JobArgs convertToJobArgs(const device::NewJobArgs& protoArgs) {
+        service::JobArgs args;
         args.filename = protoArgs.filename();
         args.filepath = protoArgs.filepath();
         args.printNow = protoArgs.print_now();

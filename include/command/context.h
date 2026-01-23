@@ -21,16 +21,12 @@ namespace swan {
                 , requestId_(requestId)
                 , timestamp_(timestamp) {}
 
-            // 获取设备ID
             const std::string& getDeviceId() const { return deviceId_; }
 
-            // 获取请求ID
             const std::string& getRequestId() const { return requestId_; }
 
-            // 获取时间戳
             std::chrono::system_clock::time_point getTimestamp() const { return timestamp_; }
 
-            // 响应通道（发送执行结果回云端）
             void setResponseCallback(std::function<void(const std::string&, const CommandResult&)> callback) {
                 responseCallback_ = std::move(callback);
             }

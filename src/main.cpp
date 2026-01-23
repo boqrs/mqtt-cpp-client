@@ -12,6 +12,7 @@
 #include "spdlog/spdlog.h"
 #include "logger/logger.h"
 #include "mqtt/publisher.h"
+#include "service/service_factory.h"
 #include "config.h"
 
 

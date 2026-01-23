@@ -281,32 +281,32 @@ else()
 endif()
 
 # ------------------------------------------------------------------------------
-# 8. 命令模块 (command)
+# 8. 协议模块 (protocol)
 # ------------------------------------------------------------------------------
-file(GLOB DEVICE_COMMAND_SRCS
-        ${SOURCE_ROOT}/command/*.cpp
-        ${SOURCE_ROOT}/command/**/*.cpp
+file(GLOB PROTOCOL_SRCS
+        ${SOURCE_ROOT}/protocol/*.cpp
+        ${SOURCE_ROOT}/protocol/**/*.cpp
 )
 
-if(DEVICE_COMMAND_SRCS)
-    message(STATUS "找到数据处理器源文件，创建数据处理器库...")
+if(PROTOCOL_SRCS)
+    message(STATUS "找到协议处理模块源文件，创建协议处理库...")
 
-    add_library(device_command STATIC ${DEVICE_COMMAND_SRCS})
+    add_library(device_protocol STATIC ${PROTOCOL_SRCS})
 
-    target_include_directories(device_command PUBLIC
+    target_include_directories(device_protocol PUBLIC
             ${INCLUDE_DIR}
             ${PROTO_GEN_DIR}
             ${CMAKE_BINARY_DIR}/generated
     )
 
-    target_link_libraries(device_command PUBLIC
+    target_link_libraries(device_protocol PUBLIC
             proto_messages
             embedded_logger
     )
 
-    message(STATUS "设备命令管理创建完成: device_command")
+    message(STATUS "设备协议管理创建完成: device_protocol")
 else()
-    message(WARNING "未找到设备命令文件")
+    message(WARNING "未找到设备协议文件")
 endif()
 
 # ------------------------------------------------------------------------------
@@ -362,7 +362,7 @@ if(MQTT_PUBLISHER_SRCS)
     endif()
 
     target_link_libraries(mqtt_publisher PUBLIC
-            device_command
+            device_protocol
             device_service
             proto_messages
             embedded_logger
@@ -509,8 +509,8 @@ message(STATUS "    - proto_messages: Protobuf消息库")
 if(TARGET embedded_logger)
     message(STATUS "    - embedded_logger: 日志系统")
 endif()
-if(TARGET device_command)
-    message(STATUS "    - device_command: 设备命令")
+if(TARGET device_protocol)
+    message(STATUS "    - device_protocol: 设备协议")
 endif()
 if(TARGET device_service)
     message(STATUS "    - device_service: 设备命令业务")

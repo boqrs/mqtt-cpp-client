@@ -25,9 +25,10 @@ std::atomic<bool> g_running{true};
 void signal_handler(int signal)
 {
     if (signal == SIGINT) {
-        std::cout << "\n收到中断信号，正在停止..." << std::endl;
+        LOG_INFO("Received interrupt signal, stopping...");
         g_running = false;
     }
+    shutdownLogger();
 }
 
 // 自定义监听器实现
@@ -36,14 +37,12 @@ public:
 
     void onPublishError(const std::string& topic,
                         const std::string& error) override {
-        std::cerr << "[Listener] Publish error: " << topic
-                  << " - " << error << std::endl;
+        LOG_ERROR("[Listener] Publish error: {} - {}", topic, error );
     }
 
     void onPublishSuccess(const std::string& topic,
                           size_t payload_size) override {
-        std::cout << "[Listener] Published to " << topic
-                  << " (" << payload_size << " bytes)" << std::endl;
+        LOG_INFO("[Listener] Published to {}, {} bytes", topic, payload_size );
     }
 };
 
@@ -58,15 +57,16 @@ int main() {
     logCfg.consoleOutput = true;           // 输出到控制台
     logCfg.fileOutput = false;             // 不输出到文件
     logCfg.asyncLogging = true;            // 使用异步日志（如果你的实现支持）
+    logCfg.asyncQueueSize = 8192;
     logCfg.pattern = "[%Y-%m-%d %H:%M:%S.%e] [%l] [%t] %v"; // 自定义格式
     initializeLogger(logCfg);
 
-    LOG_INFO("按 Ctrl+C 停止程序");
+    LOG_INFO("Press Ctrl+C to stop the program.");
     LOG_INFO("==============================");
 
     // 配置发布器
     mqtt::DeviceStatusPublisherConfig config;
-    config.broker_ip = "10.33.44.104";
+    config.broker_ip = "10.33.44.3";
     config.broker_port = 18082;
     config.client_id = "swan_printer_001";
     config.username = "admin";
@@ -209,14 +209,14 @@ int main() {
             std::this_thread::sleep_for(500ms);
         }
     } catch (const std::exception& e) {
-        LOG_ERROR("发生异常: {}", e.what());
+        LOG_ERROR("An exception occurred: {}", e.what());
     }
 
     // 停止发布器
-    LOG_WARN("正在停止发布器...");
+    LOG_WARN("application is stopping...");
 
     publisher->stop();
-    LOG_INFO("总计发布{} 条消息", counter);
-    LOG_INFO("程序退出");
+    LOG_INFO("The program is exiting...");
+    shutdownLogger();
     return 0;
 }

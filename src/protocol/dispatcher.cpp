@@ -18,8 +18,7 @@ CommandDispatcher::CommandDispatcher()
 
     queue_running_ = true;
     queue_processor_ = std::thread(&CommandDispatcher::queueProcessorThread, this);
-
-    std::cout << "CommandDispatcher initialized with queue system" << std::endl;
+    LOG_INFO("CommandDispatcher initialized with queue system");
 }
 
 CommandDispatcher::~CommandDispatcher() {
@@ -31,7 +30,7 @@ CommandDispatcher::~CommandDispatcher() {
         queue_processor_.join();
     }
 
-    std::cout << "CommandDispatcher shutdown" << std::endl;
+    LOG_INFO("CommandDispatcher shutdown");
 }
 
 common::Result CommandDispatcher::dispatch(
@@ -74,7 +73,7 @@ common::Result CommandDispatcher::dispatch(
     // 查找对应的服务
     auto service = service_factory_.discoverServiceByAction(action_type);
     if (!service) {
-        std::cerr << "Error: No service found for action type: " << action_type << std::endl;
+        LOG_ERROR("Error: No service found for action type: {}", action_type);
         return common::Result::failure(
             common::protocol::DISPATCHER_NO_HANDLER,
             "No service handler for action",
@@ -85,9 +84,7 @@ common::Result CommandDispatcher::dispatch(
     // 验证服务状态
     auto status = service->getStatus();
     if (status != "READY" && status != "RUNNING") {
-        std::cerr << "Warning: Service " << service->getName()
-                  << " not ready, status: " << status << std::endl;
-
+        LOG_ERROR("Service: {}  not ready, status: {}", service->getName(), status);
         return common::Result::failure(
             common::command::EXECUTOR_RESOURCE_BUSY,
             "Service not ready",
@@ -97,17 +94,14 @@ common::Result CommandDispatcher::dispatch(
 
     // 执行命令
     try {
-        std::cout << "Info: Dispatching command " << cmd.cmd()
-                  << " to service " << service->getName() << std::endl;
-
+        LOG_INFO("Dispatching command: {} to service {} ", cmd.cmd(), service->getName());
         auto result = service->execute(cmd, context);
-
         // 将 action_type 设置为结果数据
         result.setData(action_type);
         return result;
 
     } catch (const std::exception& e) {
-        std::cerr << "Error: Exception during command dispatch: " << e.what() << std::endl;
+        LOG_ERROR(" Exception during command dispatch: {}", e.what());
         return common::Result::failure(
             common::command::EXECUTOR_FAILED,
             "Command execution failed",
@@ -121,13 +115,12 @@ bool CommandDispatcher::registerService(ServicePtr service) {
 
     std::string action_type = service->getSupportedActionType();
     if (services_.find(action_type) != services_.end()) {
-        std::cerr << "Warning: Service already registered for action type: "
-                  << action_type << std::endl;
+        LOG_ERROR("Service already registered for action type: {}", action_type);
         return false;
     }
 
     services_[action_type] = service;
-    std::cout << "Info: Registered service for action: " << action_type << std::endl;
+    LOG_INFO("Registered service for action: {}", action_type);
     return true;
 }
 

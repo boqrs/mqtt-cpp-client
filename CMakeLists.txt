@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.14)
 project(swan VERSION 1.0.0 LANGUAGES CXX)
+cmake_policy(SET CMP0078 OLD)  # 兼容旧类型处理
+set(CMAKE_SUPPRESS_DEVELOPER_WARNINGS ON CACHE BOOL "Suppress developer warnings")  # 禁用 dev 警告
 
 # ------------------------------------------------------------------------------
 # 1. 基础配置
@@ -226,7 +228,7 @@ endforeach()
 
 add_custom_target(generate_protos ALL
         DEPENDS ${PROTO_SRCS} ${PROTO_HDRS}
-        COMMENT "生成所有Protobuf文件"
+        COMMENT "Generate all Protobuf files"
 )
 
 # 创建 Protobuf 库
@@ -394,36 +396,37 @@ set(DEVICE_MODE "ad5x")          # 固定值
 set(DEVICE_SN "SNWMOD12332211222")      # 固定序列号
 
 # Broker基础配置（默认值）
-set(MQTT_BROKER_IP "10.33.44.3" CACHE STRING "MQTT Broker IP地址")
-set(MQTT_BROKER_PORT 18082 CACHE INT "MQTT Broker端口")
-set(MQTT_CLIENT_ID "" CACHE STRING "MQTT客户端ID（为空自动生成）")
-set(MQTT_PROTOCOL "tcp" CACHE STRING "MQTT通信协议(tcp/ssl)")
+set(MQTT_BROKER_IP "10.33.44.3" CACHE STRING "MQTT broker address")
+set(MQTT_BROKER_PORT 18082 CACHE INT "MQTT broker port")
+set(MQTT_CLIENT_ID "" CACHE STRING "MQTT client id（Auto-generate if empty）")
+set(MQTT_PROTOCOL "tcp" CACHE STRING "MQTT communication protocol (tcp/ssl)")
 
 # 认证配置（默认空）
-set(MQTT_USERNAME "admin" CACHE STRING "MQTT认证用户名")
-set(MQTT_PASSWORD "zxcv.1234" CACHE STRING "MQTT认证密码")
-set(MQTT_CA_CERT_PATH "" CACHE STRING "MQTT SSL CA证书路径")
-set(MQTT_CLIENT_CERT_PATH "" CACHE STRING "MQTT SSL客户端证书路径")
-set(MQTT_CLIENT_KEY_PATH "" CACHE STRING "MQTT SSL客户端私钥路径")
+set(MQTT_USERNAME "admin" CACHE STRING "MQTT authentication username")
+set(MQTT_PASSWORD "zxcv.1234" CACHE STRING "MQTT authentication password")
+set(MQTT_CA_CERT_PATH "" CACHE STRING "MQTT SSL CA certificate path")
+set(MQTT_CLIENT_CERT_PATH "" CACHE STRING "MQTT SSL client certificate path")
+set(MQTT_CLIENT_KEY_PATH "" CACHE STRING "MQTT SSL client private key path")
 
-# 重连策略
-set(MQTT_MAX_RETRY_COUNT 3 CACHE INT "MQTT最大重连次数")
-set(MQTT_BASE_BACKOFF_MS 1000 CACHE INT "MQTT基础退避间隔(ms)")
-set(MQTT_MAX_BACKOFF_MS 10000 CACHE INT "MQTT最大退避间隔(ms)")
-set(MQTT_AUTO_RECONNECT 1 CACHE BOOL "MQTT是否自动重连")
+# Reconnection strategy
+set(MQTT_MAX_RETRY_COUNT 3 CACHE INT "MQTT maximum reconnection attempts")
+set(MQTT_BASE_BACKOFF_MS 1000 CACHE INT "MQTT base backoff interval (ms)")
+set(MQTT_MAX_BACKOFF_MS 10000 CACHE INT "MQTT maximum backoff interval (ms)")
+set(MQTT_AUTO_RECONNECT 1 CACHE BOOL "MQTT auto-reconnection enabled")
 
-# 订阅配置（默认订阅设备指令+广播）
-set(MQTT_SUBSCRIBE_TOPICS "device/${DEVICE_MODE}/${DEVICE_SN}/command:1" CACHE STRING "设备命令监听主题（topic:qos;...）")
-set(MQTT_DEVICE_STATIC_TOPIC "device/${DEVICE_MODE}/${DEVICE_SN}/state" CACHE STRING "设备状态发布主题（topic:qos;...）")
-# 发布配置
-set(MQTT_DEFAULT_QOS 0 CACHE INT "MQTT默认发布QoS")
-set(MQTT_DEFAULT_RETAINED 0 CACHE BOOL "MQTT默认保留消息")
-set(MQTT_PUBLISH_TIMEOUT_MS 5000 CACHE INT "MQTT同步发布超时(ms)")
+# Subscription configuration (default: device command + broadcast)
+set(MQTT_SUBSCRIBE_TOPICS "device/${DEVICE_MODE}/${DEVICE_SN}/command:1" CACHE STRING "Device command listening topic (format: topic:qos;...)")
+set(MQTT_DEVICE_STATIC_TOPIC "device/${DEVICE_MODE}/${DEVICE_SN}/state" CACHE STRING "Device state publishing topic (format: topic:qos;...)")
 
-# 客户端基础配置
-set(MQTT_KEEP_ALIVE_INTERVAL 60 CACHE INT "MQTT心跳间隔(s)")
-set(MQTT_CLEAN_SESSION 1 CACHE BOOL "MQTT清理会话")
-set(MQTT_VERSION 4 CACHE INT "MQTT版本(4=3.1.1,5=5.0)")
+# Publishing configuration
+set(MQTT_DEFAULT_QOS 0 CACHE INT "MQTT default publishing QoS")
+set(MQTT_DEFAULT_RETAINED 0 CACHE BOOL "MQTT default retained message enabled")
+set(MQTT_PUBLISH_TIMEOUT_MS 5000 CACHE INT "MQTT synchronous publishing timeout (ms)")
+
+# Client basic configuration
+set(MQTT_KEEP_ALIVE_INTERVAL 60 CACHE INT "MQTT keep-alive interval (s)")
+set(MQTT_CLEAN_SESSION 1 CACHE BOOL "MQTT clean session enabled")
+set(MQTT_VERSION 4 CACHE INT "MQTT protocol version (4=3.1.1, 5=5.0)")
 
 # 确保目录存在
 file(MAKE_DIRECTORY ${GENERATED_CONFIG_DIR})

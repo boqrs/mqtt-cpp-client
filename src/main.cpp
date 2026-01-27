@@ -2,6 +2,11 @@
 //
 // Created by wave on 2026/1/7.
 //
+//TODO: 这里有问题，状态的发布数据分为两种情况
+//      1. 一种是需要立刻发送的同步消息比较急，可能是将来的告警信息 action_type=alarm
+//      2. 一种是常规的状态更新，会被放到消息缓冲链表里面，由 mqtt 线程按顺序发布
+//      3. 需要按照上面两需求修改发布逻辑, 并且由发布标记决定是否立刻发布
+//      4. 到发布器的时候不应该再去解析协议中的内容决定怎么走
 
 #include <iostream>
 #include <thread>
@@ -11,7 +16,9 @@
 
 #include "spdlog/spdlog.h"
 #include "logger/logger.h"
-#include "mqtt/publisher.h"
+//#include "mqtt/publisher.h"
+#include "../include/mqtt/initializer.h"
+#include "../include/mqtt/manage.h"
 #include "service/service_factory.h"
 #include "protocol/initialize.h"
 #include "config.h"
@@ -33,23 +40,24 @@ void signal_handler(int signal)
     shutdownLogger();
 }
 
-// 自定义监听器实现
-class StatusListener : public swan::mqtt::IDeviceStatusListener {
-public:
-
-    void onPublishError(const std::string& topic,
-                        const std::string& error) override {
-        LOG_ERROR("[Listener] Publish error: {} - {}", topic, error );
-    }
-
-    void onPublishSuccess(const std::string& topic,
-                          size_t payload_size) override {
-        LOG_INFO("[Listener] Published to {}, {} bytes", topic, payload_size );
-    }
-};
+// // 自定义监听器实现
+// class StatusListener : public swan::mqtt::IDeviceStatusListener {
+// public:
+//
+//     void onPublishError(const std::string& topic,
+//                         const std::string& error) override {
+//         LOG_ERROR("[Listener] Publish error: {} - {}", topic, error );
+//     }
+//
+//     void onPublishSuccess(const std::string& topic,
+//                           size_t payload_size) override {
+//         LOG_INFO("[Listener] Published to {}, {} bytes", topic, payload_size );
+//     }
+// };
 
 int main() {
     using namespace swan;
+
     // 注册信号处理
     std::signal(SIGINT, signal_handler);
 
@@ -78,13 +86,17 @@ int main() {
     }
 
     LOG_INFO("IOT device command processing started successfully");
-
-
     LOG_INFO("Press Ctrl+C to stop the program.");
     LOG_INFO("==============================");
 
+    if (!initMqtt()) {
+        LOG_ERROR("failed to init mqtt client, progress exit...");
+        shutdownLogger();
+        return -1;
+    }
+
     // 配置发布器
-    mqtt::DeviceStatusPublisherConfig config;
+   /* mqtt::DeviceStatusPublisherConfig config;
     config.broker_ip = "10.33.44.3";
     config.broker_port = 18082;
     config.client_id = "swan_printer_001";
@@ -112,7 +124,7 @@ int main() {
         LOG_ERROR("Failed to start publisher" );
         shutdownLogger();
         return 1;
-    }
+    }*/
 
     // 模拟设备状态数据
     swan::protocol::DeviceStateData status;
@@ -216,8 +228,8 @@ int main() {
             auto msg = swan::protocol::MessageFactory::createStateMessage(status);
 
             // 发布状态
-            publisher->publish(msg, false);
-
+           // publisher->publish(msg, false);
+            MqttManager::getInstance().publish(MQTT_DEVICE_STATIC_TOPIC, msg.toString());
             // 打印当前进度
             if (counter % 5 == 0) {
                 LOG_INFO("message index: {}, process {}%, temperature: L: {} °C R: {} °C",
@@ -234,9 +246,6 @@ int main() {
     }
 
     // 停止发布器
-    LOG_WARN("application is stopping...");
-
-    publisher->stop();
     LOG_INFO("The program is exiting...");
     shutdownLogger();
     return 0;

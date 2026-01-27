@@ -167,16 +167,16 @@ public:
 
             // 线程池初始化日志移到这里（logger已创建）
             if (config.asyncLogging && config.asyncQueueSize > 0) {
-                logger_->info("异步日志线程池初始化完成，队列大小: {}", config.asyncQueueSize);
+                logger_->info("Asynchronous logging thread pool initialized successfully, queue size: {}", config.asyncQueueSize);
             }
 
-            logger_->info("日志系统初始化完成，级别: {}, 异步: {}",
+            logger_->info("Log system initialized successfully, level: {}, asynchronous: {}",
                           static_cast<int>(config.level),
-                          config.asyncLogging ? "是" : "否");
+                          config.asyncLogging ? "yes" : "no");
 
         } catch (const std::exception& e) {
-            std::cerr << "日志系统初始化失败: " << e.what()
-                      << "，将使用基础控制台日志" << std::endl;
+            std::cerr << "Log system initialization failed: " << e.what()
+                      << "，Will use basic console logging" << std::endl;
 
             // 创建简单的控制台日志器作为后备
             auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
@@ -189,7 +189,7 @@ public:
             console_output_ = true;
             initialized_ = true;
 
-            logger_->error("日志系统初始化失败，使用后备模式: {}", e.what());
+            logger_->error("Log system initialization failed, falling back to backup mode: {}", e.what());
         }
     }
 

@@ -1,67 +1,60 @@
 //
-// Created by wave on 2026/1/8.
+// Created by wave on 2026/1/27.
 //
-#pragma once
 
-#include <iostream>
+#pragma once
 #include <string>
 #include <functional>
 #include <memory>
-
-// 使用高级API
 #include <MQTTClient.h>
 
-using messageCallback = std::function<void(const std::string& topic, const std::string& payload)>;
+// 消息回调类型定义
+using MqttMessageCallback = std::function<void(const std::string& topic, const std::string& payload)>;
+using MqttStatusCallback = std::function<void(bool connected, const std::string& reason)>;
 
-struct Impl {
-    MQTTClient client = nullptr;
-    std::string broker_ip;
-    int broker_port = 1883;
-    std::string client_id;
-    std::string broker_uri;  // 格式: tcp://ip:port
-
-    messageCallback user_cb;
-
-    bool connected = false;
-
-    Impl(const std::string& ip, int port, const std::string& id);
-    ~Impl();
-
-    bool connect(const std::string& username = "",
-                 const std::string& password = "");
-
-    bool publish(const std::string& topic,
-                 const std::string& message,
-                 int qos = 0) const;
-
-    bool subscribe(const std::string& topic, int qos = 0, bool no_local = true) const;
-
-    void yield(int timeout_ms = 100);
-    void disconnect();
-
-private:
-    static int messageArrived(void* context, char* topicName, int topicLen, MQTTClient_message* message);
-};
-
+/**
+ * @brief MQTT基础客户端（封装底层Paho MQTT C库）
+ * @note 仅处理MQTT协议基础操作，无业务逻辑、无线程管理
+ */
 class MqttClient {
 public:
-    MqttClient(const std::string& ip, int port, const std::string& client_id);
+    MqttClient(const std::string& broker_ip, int broker_port, const std::string& client_id);
     ~MqttClient();
 
+    // 禁止拷贝
     MqttClient(const MqttClient&) = delete;
     MqttClient& operator=(const MqttClient&) = delete;
 
-    MqttClient(MqttClient&&) noexcept;
-    MqttClient& operator=(MqttClient&&) noexcept;
+    // 连接MQTT服务器（支持用户名密码认证）
+    bool connect(const std::string& username = "", const std::string& password = "");
+    // 断开连接
+    void disconnect();
+    // 发布消息（QoS 0/1/2，支持保留消息）
+    bool publish(const std::string& topic, const std::string& payload, int qos = 0, bool retained = false);
+    // 订阅主题
+    bool subscribe(const std::string& topic, int qos = 0);
+    // 取消订阅
+    bool unsubscribe(const std::string& topic);
+    // 处理网络事件（必须周期性调用，否则无法接收消息）
+    void yield(int timeout_ms = 100);
+    // 检查连接状态
+    bool isConnected() const { return m_connected; }
 
-    bool connect(const std::string& username = "", const std::string& password = "") const;
-    void disconnect() const;
-    bool publish(const std::string& topic, const std::string& payload, int qos = 0) const;
-    bool subscribe(const std::string& topic, int qos = 0, bool no_local = true) const;
-    void setMessageCallback(messageCallback cb) const;
-    void yield(int timeout_ms = 100) const;
-    bool isConnected() const;
+    // 设置回调函数
+    void setMessageCallback(MqttMessageCallback cb) { m_msg_callback = std::move(cb); }
+    void setStatusCallback(MqttStatusCallback cb) { m_status_callback = std::move(cb); }
 
 private:
-    std::unique_ptr<Impl> pimpl_;
+    // 底层消息回调（适配Paho C库）
+    static int onMessageArrived(void* context, char* topicName, int topicLen, MQTTClient_message* message);
+    // 连接丢失回调
+    static void onConnectionLost(void* context, char* cause);
+
+    std::string m_broker_uri;  // tcp://ip:port
+    std::string m_client_id;
+    MQTTClient m_client = nullptr;
+    bool m_connected = false;
+
+    MqttMessageCallback m_msg_callback;
+    MqttStatusCallback m_status_callback;
 };

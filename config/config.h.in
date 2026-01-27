@@ -30,5 +30,41 @@
 #define DEVICE_MODE "@DEVICE_MODE@"
 #define DEVICE_SN "@DEVICE_SN@"
 
+// ====================== MQTT 核心配置（新增） ======================
+// Broker基础配置
+#define MQTT_BROKER_IP "@MQTT_BROKER_IP@"
+#define MQTT_BROKER_PORT @MQTT_BROKER_PORT@
+#define MQTT_CLIENT_ID "@MQTT_CLIENT_ID@" // 为空则自动生成
+#define MQTT_PROTOCOL "@MQTT_PROTOCOL@"   // tcp/ssl
+
+// MQTT认证配置
+#define MQTT_USERNAME "@MQTT_USERNAME@"
+#define MQTT_PASSWORD "@MQTT_PASSWORD@"
+#define MQTT_CA_CERT_PATH "@MQTT_CA_CERT_PATH@"   // SSL CA证书路径
+#define MQTT_CLIENT_CERT_PATH "@MQTT_CLIENT_CERT_PATH@" // SSL客户端证书
+#define MQTT_CLIENT_KEY_PATH "@MQTT_CLIENT_KEY_PATH@"   // SSL客户端私钥
+
+// MQTT重连策略（退避算法）
+#define MQTT_MAX_RETRY_COUNT @MQTT_MAX_RETRY_COUNT@    // 最大重连次数
+#define MQTT_BASE_BACKOFF_MS @MQTT_BASE_BACKOFF_MS@    // 基础退避间隔(ms)
+#define MQTT_MAX_BACKOFF_MS @MQTT_MAX_BACKOFF_MS@      // 最大退避间隔(ms)
+#define MQTT_AUTO_RECONNECT @MQTT_AUTO_RECONNECT@      // 是否自动重连(0/1)
+
+// MQTT订阅配置（分号分隔的"topic:qos"字符串，如"iot/device/command:1;iot/broadcast:0"）
+#define MQTT_SUBSCRIBE_TOPICS "@MQTT_SUBSCRIBE_TOPICS@"
+
+//设备状态发布topic
+#define MQTT_DEVICE_STATIC_TOPIC "@MQTT_DEVICE_STATIC_TOPIC@"
+
+// MQTT发布默认配置
+#define MQTT_DEFAULT_QOS @MQTT_DEFAULT_QOS@            // 默认QoS(0/1/2)
+#define MQTT_DEFAULT_RETAINED @MQTT_DEFAULT_RETAINED@  // 默认是否保留消息(0/1)
+#define MQTT_PUBLISH_TIMEOUT_MS @MQTT_PUBLISH_TIMEOUT_MS@ // 同步发布超时(ms)
+
+// MQTT客户端基础配置
+#define MQTT_KEEP_ALIVE_INTERVAL @MQTT_KEEP_ALIVE_INTERVAL@ // 心跳间隔(s)
+#define MQTT_CLEAN_SESSION @MQTT_CLEAN_SESSION@            // 是否清理会话(0/1)
+#define MQTT_VERSION @MQTT_VERSION@                        // MQTT版本(4=3.1.1,5=5.0)
+
 // 版本信息字符串
 #define PROJECT_VERSION_STRING PROJECT_NAME " v" STRINGIFY(PROJECT_VERSION)

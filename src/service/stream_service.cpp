@@ -276,9 +276,3 @@ common::Result StreamService::stopCameraStream(const std::string& session_id) {
 
 } // namespace services
 } // namespace swan
-
-namespace {
-    // 使用匿名命名空间确保唯一性
-    static swan::services::ServiceRegistrar<swan::services::StreamService>
-        _light_service_registrar("stream_control");
-}

@@ -228,9 +228,3 @@ common::Result TemperatureService::updateTemperature(int32_t& current,
 
 } // namespace services
 } // namespace swan
-
-namespace {
-    // 使用匿名命名空间确保唯一性
-    static swan::services::ServiceRegistrar<swan::services::TemperatureService>
-        _light_service_registrar("temperature_control");
-}

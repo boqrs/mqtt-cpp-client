@@ -436,6 +436,7 @@ if(PAHO_MQTT_C_FOUND)
 endif()
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
+        atomic
         mqtt_publisher
         proto_messages
         embedded_logger

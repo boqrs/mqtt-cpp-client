@@ -162,10 +162,3 @@ common::Result UserService::updateUserDisplay() {
 
 } // namespace services
 } // namespace swan
-
-
-namespace {
-    // 使用匿名命名空间确保唯一性
-    static swan::services::ServiceRegistrar<swan::services::UserService>
-        _light_service_registrar("user_profile");
-}

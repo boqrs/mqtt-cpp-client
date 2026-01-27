@@ -77,22 +77,5 @@ private:
     mutable std::mutex mutex_;
 };
 
-    // 服务注册器类
-    template<typename ServiceClass>
-    class ServiceRegistrar {
-    public:
-        ServiceRegistrar(const std::string& service_type) {
-            bool success = ServiceFactory::instance()
-                .registerService<ServiceClass>(service_type);
-
-            if (success) {
-                // 避免使用typeid以避免RTTI依赖
-                LOG_INFO("Auto-registered service: {}", service_type);
-            } else {
-                LOG_ERROR("Failed to auto-register service: {}", service_type);
-            }
-        }
-    };
-
 } // namespace services
 } // namespace swan

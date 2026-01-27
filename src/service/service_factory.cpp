@@ -10,11 +10,11 @@
 
 namespace swan {
 namespace services {
-
-ServiceFactory& ServiceFactory::instance() {
+    ServiceFactory& ServiceFactory::instance() {
     static ServiceFactory instance;
     return instance;
 }
+    swan::services::ServiceFactory& force_service_factory_init = swan::services::ServiceFactory::instance();
 
 ServiceFactory::ServiceFactory() {
     LOG_DEBUG("ServiceFactory initialized");

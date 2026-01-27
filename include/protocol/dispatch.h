@@ -8,7 +8,6 @@
 #include <memory>
 #include <string>
 #include <future>
-#include <vector>
 #include <queue>
 #include <mutex>
 #include <condition_variable>
@@ -30,23 +29,21 @@ public:
     CommandDispatcher();
     ~CommandDispatcher();
 
-    // 命令分发
-    common::Result dispatch(
+    // 协议解析
+    common::Result dispatchUnifiedMessage(
         const device::UnifiedMessage& message,
-        std::shared_ptr<command::CommandContext> context);
+        const std::shared_ptr<swan::protocol::command::CommandContext> context);
 
-    common::Result dispatch(
+    //命令执行
+    common::Result dispatchControlCommand(
         const device::ControlCommand& cmd,
         const std::string& action_type,
-        std::shared_ptr<command::CommandContext> context);
+        const std::shared_ptr<swan::protocol::command::CommandContext>& context);
 
     // 服务管理
     bool registerService(ServicePtr service);
     bool unregisterService(const std::string& action_type);
     ServicePtr getService(const std::string& action_type) const;
-
-    // 批量注册服务
-    bool registerServices(const std::vector<ServicePtr>& services);
 
     // 执行策略
     enum class ExecutionStrategy {
@@ -66,9 +63,6 @@ public:
 
     // 状态查询
     size_t getQueueSize() const;
-    std::vector<std::string> getSupportedActions() const;
-    bool isServiceAvailable(const std::string& action_type) const;
-
     // 配置
     void setMaxQueueSize(size_t size) { max_queue_size_ = size; }
     size_t getMaxQueueSize() const { return max_queue_size_; }

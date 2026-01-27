@@ -13,7 +13,9 @@
 #include "logger/logger.h"
 #include "mqtt/publisher.h"
 #include "service/service_factory.h"
+#include "protocol/initialize.h"
 #include "config.h"
+#include "service/registry.h"
 
 
 using namespace std::chrono_literals;
@@ -61,6 +63,23 @@ int main() {
     logCfg.pattern = "[%Y-%m-%d %H:%M:%S.%e] [%l] [%t] %v"; // 自定义格式
     initializeLogger(logCfg);
 
+   auto success = services::registerAllServices();
+    if (!success) {
+        LOG_ERROR("service initialization failed");
+        shutdownLogger();
+        return -1;
+    }
+
+    auto init_result = swan::init::initCommandProcessing(true, 2000);
+    if (!init_result) {
+        LOG_ERROR("Command processing initialization failed");
+        shutdownLogger();
+        return -1;
+    }
+
+    LOG_INFO("IOT device command processing started successfully");
+
+
     LOG_INFO("Press Ctrl+C to stop the program.");
     LOG_INFO("==============================");
 
@@ -85,11 +104,13 @@ int main() {
     // 初始化并启动
     if (!publisher->initialize(config)) {
         LOG_ERROR("Failed to initialize publisher" );
+        shutdownLogger();
         return 1;
     }
 
     if (!publisher->start()) {
         LOG_ERROR("Failed to start publisher" );
+        shutdownLogger();
         return 1;
     }
 

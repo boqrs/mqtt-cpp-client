@@ -205,9 +205,3 @@ void UnregisterService::updateProgress(int progress, const std::string& message)
 
 } // namespace services
 } // namespace swan
-
-namespace {
-    // 使用匿名命名空间确保唯一性
-    static swan::services::ServiceRegistrar<swan::services::UnregisterService>
-        _light_service_registrar("device_unregister");
-}

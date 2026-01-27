@@ -496,9 +496,3 @@ common::Result PrintService::startPrinting() {
 
 } // namespace services
 } // namespace swan
-
-namespace {
-    // 使用匿名命名空间确保唯一性
-    static swan::services::ServiceRegistrar<swan::services::PrintService>
-        _light_service_registrar("print_control");
-}

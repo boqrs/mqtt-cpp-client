@@ -10,7 +10,7 @@
 #include "mqtt/thread.h"
 
 
-MqttThread::MqttThread(const std::string &broker_ip, int broker_port, const std::string &client_id):m_broker_ip(broker_ip), m_broker_port(broker_port), m_client_id(client_id){
+MqttThread::MqttThread(const std::string &broker_ip, int broker_port, const std::string &client_id){
     m_client = std::make_unique<MqttClient>(broker_ip, broker_port, client_id);
 
 

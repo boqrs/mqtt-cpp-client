@@ -143,12 +143,18 @@ namespace protocol {
     constexpr ErrorCode PARSER_MESSAGE_TOO_SMALL     = ErrorCode(Module::PROTOCOL, submodule::Protocol::PARSER, 0x0006);
     constexpr ErrorCode PARSER_CHECKSUM_MISMATCH     = ErrorCode(Module::PROTOCOL, submodule::Protocol::PARSER, 0x0007);
     constexpr ErrorCode PARSER_DESERIALIZATION_FAILED= ErrorCode(Module::PROTOCOL, submodule::Protocol::PARSER, 0x0008);
+    constexpr ErrorCode PARSER_PARSER_INIT_FAILED= ErrorCode(Module::PROTOCOL, submodule::Protocol::PARSER, 0x0009);
     constexpr ErrorCode VALIDATOR_INVALID_TIMESTAMP  = ErrorCode(Module::PROTOCOL, submodule::Protocol::VALIDATOR, 0x0001);
     constexpr ErrorCode VALIDATOR_INVALID_DEVICE_ID  = ErrorCode(Module::PROTOCOL, submodule::Protocol::VALIDATOR, 0x0002);
     constexpr ErrorCode VALIDATOR_INVALID_REQUEST_ID = ErrorCode(Module::PROTOCOL, submodule::Protocol::VALIDATOR, 0x0003);
     constexpr ErrorCode VALIDATOR_VALUE_OUT_OF_RANGE = ErrorCode(Module::PROTOCOL, submodule::Protocol::VALIDATOR, 0x0004);
     constexpr ErrorCode DISPATCHER_INVALID_ACTION    = ErrorCode(Module::PROTOCOL, submodule::Protocol::DISPATCHER, 0x0001);
     constexpr ErrorCode DISPATCHER_NO_HANDLER        = ErrorCode(Module::PROTOCOL, submodule::Protocol::DISPATCHER, 0x0002);
+    constexpr ErrorCode DISPATCHER_INIT_FAILED        = ErrorCode(Module::PROTOCOL, submodule::Protocol::DISPATCHER, 0x0003);
+    constexpr ErrorCode DISPATCHER_REGISTER_FAILED        = ErrorCode(Module::PROTOCOL, submodule::Protocol::DISPATCHER, 0x0004);
+    constexpr ErrorCode DISPATCHER_QUEUE_FULL        = ErrorCode(Module::PROTOCOL, submodule::Protocol::DISPATCHER, 0x0005);
+    constexpr ErrorCode DISPATCHER_REJECTED        = ErrorCode(Module::PROTOCOL, submodule::Protocol::DISPATCHER, 0x0006);
+    constexpr ErrorCode DISPATCHER_INVALID_STRATEGY        = ErrorCode(Module::PROTOCOL, submodule::Protocol::DISPATCHER, 0x0007);
 }
 
 // -------------------- 命令模块错误 --------------------
@@ -190,6 +196,7 @@ namespace service {
     constexpr ErrorCode MATERIAL_TYPE_MISMATCH       = ErrorCode(Module::SERVICE, submodule::Service::MATERIAL, 0x0002);
     constexpr ErrorCode MATERIAL_JAMMED              = ErrorCode(Module::SERVICE, submodule::Service::MATERIAL, 0x0003);
     constexpr ErrorCode MATERIAL_TEMP_TOO_LOW        = ErrorCode(Module::SERVICE, submodule::Service::MATERIAL, 0x0004);
+    constexpr ErrorCode SERVICE_INIT_FAILED        = ErrorCode(Module::SERVICE, submodule::Service::MATERIAL, 0x0005);
 }
 
 // -------------------- 系统模块错误 --------------------

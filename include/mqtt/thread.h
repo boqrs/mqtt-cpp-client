@@ -78,9 +78,6 @@ private:
 
     std::unique_ptr<MqttClient> m_client;
 
-    std::string m_broker_ip;
-    int m_broker_port;
-    std::string m_client_id;
     std::string m_username;
     std::string m_password;
 

@@ -9,6 +9,7 @@
 #include "service/stream_service.h"
 #include "service/temperature_service.h"
 #include "service/unregister_service.h"
+#include "logger/logger.h"
 
 namespace swan {
     namespace services {

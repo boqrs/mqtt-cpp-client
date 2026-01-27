@@ -137,8 +137,6 @@ common::Result UnregisterService::clearUserData() {
     try {
         LOG_INFO("Clearing user data...");
 
-        // 这里应该实现用户数据清理逻辑
-        // 例如: 删除用户配置文件、清除缓存、删除临时文件等
 
         std::this_thread::sleep_for(std::chrono::seconds(3));
 

@@ -143,9 +143,6 @@ common::Result UserService::updateUserDisplay() {
     try {
         LOG_DEBUG("Updating user display with name: {}", current_profile_.user_name);
 
-        // 这里应该调用实际的显示接口
-        // 例如: display_manager->showUserName(current_profile_.user_name);
-        //       display_manager->showUserAvatar(current_profile_.avatar_url);
 
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
 

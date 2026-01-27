@@ -259,9 +259,6 @@ common::Result StreamService::stopCameraStream(const std::string& session_id) {
         // 模拟硬件停止
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
-        // 这里应该调用实际的摄像头硬件接口
-        // 例如: camera_manager->stopStream(session_id);
-
         LOG_INFO("Camera stream stopped for session {}", session_id);
         return common::Result::success("Camera stream stopped");
 

@@ -18,11 +18,6 @@ namespace swan {
         namespace command {
             using ControlCommand = ::swan::device::ControlCommand;
 
-            // 前向声明
-            // namespace device {
-            //     class ControlCommand;
-            // }
-
             class CommandContext;
 
             // 执行模式

@@ -11,10 +11,6 @@
 #include <condition_variable>
 #include <queue>
 
-/**
- * @brief MQTT连接管理器（单例模式）
- * @note 管理全局MQTT连接，提供线程安全的发布/订阅接口，支持自动重连
- */
 class MqttManager {
 public:
     // 单例实例（全局唯一）

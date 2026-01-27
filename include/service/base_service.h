@@ -1,8 +1,6 @@
 //
 // Created by wave on 2026/1/23.
 //
-// base_service.h
-// base_service.h 修复 override
 #pragma once
 
 #include "protocol.pb.h"

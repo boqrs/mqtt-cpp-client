@@ -135,11 +135,9 @@ public:
             if (config.asyncLogging && config.asyncQueueSize > 0) {
                 // 原子变量确保线程池仅初始化一次
                 if (!g_thread_pool_initialized.load()) {
-                    // 旧版spdlog的init_thread_pool接口兼容
                     spdlog::init_thread_pool(config.asyncQueueSize, 1);
                     g_thread_pool_initialized.store(true);
                     g_thread_pool_cleaned.store(false);
-                    // 注意：旧版logger_->info需等logger创建后调用，这里先注释，移到后面
                 }
 
                 logger_ = std::make_shared<spdlog::async_logger>(
@@ -165,7 +163,6 @@ public:
 
             initialized_ = true;
 
-            // 线程池初始化日志移到这里（logger已创建）
             if (config.asyncLogging && config.asyncQueueSize > 0) {
                 logger_->info("Asynchronous logging thread pool initialized successfully, queue size: {}", config.asyncQueueSize);
             }
@@ -200,7 +197,6 @@ public:
         do_shutdown();
     }
 
-    // 内部的不加锁关闭方法 - 适配旧版spdlog
     void do_shutdown() {
         if (logger_) {
             logger_->flush();          // 强制刷盘所有未写入的日志
@@ -323,13 +319,10 @@ void initializeLogger(const LoggerConfig& config) {
     global_logger = logger;
 }
 
-// 修改全局shutdown：适配旧版spdlog的全局清理
 void shutdownLogger() {
     std::lock_guard<std::mutex> lock(global_logger_mutex);
     if (global_logger) {
-        // 先调用logger的shutdown（内含线程池清理）
         global_logger->shutdown();
-        // 旧版spdlog的全局shutdown会清理线程池
         spdlog::shutdown();
         global_logger.reset();
     }

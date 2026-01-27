@@ -40,21 +40,6 @@ void signal_handler(int signal)
     shutdownLogger();
 }
 
-// // 自定义监听器实现
-// class StatusListener : public swan::mqtt::IDeviceStatusListener {
-// public:
-//
-//     void onPublishError(const std::string& topic,
-//                         const std::string& error) override {
-//         LOG_ERROR("[Listener] Publish error: {} - {}", topic, error );
-//     }
-//
-//     void onPublishSuccess(const std::string& topic,
-//                           size_t payload_size) override {
-//         LOG_INFO("[Listener] Published to {}, {} bytes", topic, payload_size );
-//     }
-// };
-
 int main() {
     using namespace swan;
 
@@ -94,37 +79,6 @@ int main() {
         shutdownLogger();
         return -1;
     }
-
-    // 配置发布器
-   /* mqtt::DeviceStatusPublisherConfig config;
-    config.broker_ip = "10.33.44.3";
-    config.broker_port = 18082;
-    config.client_id = "swan_printer_001";
-    config.username = "admin";
-    config.password = "zxcv.1234";
-    config.mode = mqtt::DeviceStatusPublisherConfig::PublishMode::HYBRID;
-    config.publish_interval_ms = 10000;  // 10秒心跳
-    config.qos = 1;
-
-    // 创建发布器
-    auto publisher = std::make_unique<mqtt::DeviceStatusPublisher>();
-
-    // 添加监听器
-    auto listener = std::make_shared<StatusListener>();
-    publisher->addListener(listener);
-
-    // 初始化并启动
-    if (!publisher->initialize(config)) {
-        LOG_ERROR("Failed to initialize publisher" );
-        shutdownLogger();
-        return 1;
-    }
-
-    if (!publisher->start()) {
-        LOG_ERROR("Failed to start publisher" );
-        shutdownLogger();
-        return 1;
-    }*/
 
     // 模拟设备状态数据
     swan::protocol::DeviceStateData status;
@@ -227,8 +181,6 @@ int main() {
             }
             auto msg = swan::protocol::MessageFactory::createStateMessage(status);
 
-            // 发布状态
-           // publisher->publish(msg, false);
             MqttManager::getInstance().publish(MQTT_DEVICE_STATIC_TOPIC, msg.toString());
             // 打印当前进度
             if (counter % 5 == 0) {

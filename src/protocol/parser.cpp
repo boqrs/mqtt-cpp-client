@@ -68,7 +68,6 @@ common::Result ProtocolParser::parseAndHandle(
             handle_result = handleDeviceCommand(message, response_callback);
 
         } else if (message_type == "device_state") {
-            // 设备端理论上不会收到 device_state，但为了完整性保留处理逻辑
             LOG_ERROR("Warning: Device received device_state message, which is unusual");
 
             handle_result = handleDeviceState(message, response_callback);

@@ -41,13 +41,10 @@ public:
         std::stringstream ss(topics_str);
         std::string item;
         while (std::getline(ss, item, ';')) {
-            // ========== 核心修复：用lambda替代isSpaceChar函数 ==========
-            // 直接在remove_if中使用lambda判断空格（避免函数指针引用问题）
             item.erase(
                 std::remove_if(
                     item.begin(),
                     item.end(),
-                    // lambda表达式：安全判断空格（转unsigned char避免未定义行为）
                     [](unsigned char c) { return std::isspace(c) != 0; }
                 ),
                 item.end()

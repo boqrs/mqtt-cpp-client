@@ -12,10 +12,7 @@
 using MqttMessageCallback = std::function<void(const std::string& topic, const std::string& payload)>;
 using MqttStatusCallback = std::function<void(bool connected, const std::string& reason)>;
 
-/**
- * @brief MQTT基础客户端（封装底层Paho MQTT C库）
- * @note 仅处理MQTT协议基础操作，无业务逻辑、无线程管理
- */
+
 class MqttClient {
 public:
     MqttClient(const std::string& broker_ip, int broker_port, const std::string& client_id);

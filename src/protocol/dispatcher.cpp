@@ -289,7 +289,6 @@ void CommandDispatcher::queueProcessorThread() {
         }
     }
 
-    // 修复：thread::id转字符串后输出
     LOG_INFO("Command queue processor thread exited (tid: {})",
              threadIdToString(std::this_thread::get_id()));
 }
@@ -339,7 +338,6 @@ CommandDispatcher::ExecutionStrategy CommandDispatcher::determineStrategy(
             );
         }
 
-        // 修复：调用public的execute方法（替代protected的executeWithGuard）
         try {
             LOG_INFO("Executing command immediately: {} to service {}",
                      cmd.cmd(), service->getName());

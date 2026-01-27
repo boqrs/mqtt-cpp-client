@@ -206,8 +206,6 @@ common::Result TemperatureService::updateTemperature(int32_t& current,
             int32_t increment = std::min(target - current, 5);  // 每次最多增加5°C
             current += increment;
 
-            // 实际硬件调用
-            // auto result = setHeaterTemperature(name, target);
 
         } else if (current > target) {
             // 冷却

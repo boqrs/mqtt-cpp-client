@@ -43,11 +43,6 @@ public:
         std::string_view raw_data,
         Callback response_callback = nullptr);
 
-    // 批量解析
-   /* std::vector<common::Result> parseBatch(
-        const std::vector<std::string_view>& messages,
-        Callback response_callback = nullptr);*/
-
     // 协议配置
     void setProtocolVersion(const ProtocolVersion& version);
     ProtocolVersion getProtocolVersion() const;

@@ -77,8 +77,6 @@ std::vector<std::string> ServiceFactory::getSupportedServiceTypes() const {
 std::shared_ptr<BaseService> ServiceFactory::discoverServiceByAction(
     const std::string& action_type) const {
 
-    // 这里我们可以实现更复杂的发现逻辑
-    // 暂时使用简单的类型映射
     std::lock_guard<std::mutex> lock(mutex_);
 
     // 尝试直接匹配

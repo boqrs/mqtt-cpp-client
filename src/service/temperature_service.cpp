@@ -20,8 +20,8 @@ TemperatureService::TemperatureService()
         .version = "1.0.0",
         .description = "Controls the 3D printer's temperature system",
         .action_type = "temperature_control",
-        .execution_mode = protocol::command::ExecutionMode::ASYNC,
-        .priority = protocol::command::CommandPriority::HIGH,
+        .execution_mode = command::ExecutionMode::ASYNC,
+        .priority = command::CommandPriority::HIGH,
         .timeout_ms = 30000,  // 温度控制可能需要更长时间
         .max_concurrent = 1,
         .require_ack = true,
@@ -36,7 +36,7 @@ std::vector<std::string> TemperatureService::getSupportedCommands() const {
 }
 
 common::Result TemperatureService::validateCommand(
-    const swan::device::ControlCommand& cmd) const {
+    const swan::protocol::ControlCommand& cmd) const {
 
     if (cmd.cmd() != "temperature_control") {
         return common::Result::failure(
@@ -89,8 +89,8 @@ common::Result TemperatureService::validateTemperature(int32_t temp, const std::
 }
 
 common::Result TemperatureService::doExecute(
-    const swan::device::ControlCommand& cmd,
-    const std::shared_ptr<protocol::command::CommandContext>& context) {
+    const swan::protocol::ControlCommand& cmd,
+    const std::shared_ptr<command::CommandContext>& context) {
 
     const auto& temp_cmd = cmd.temperature_control();
 
@@ -104,7 +104,7 @@ common::Result TemperatureService::doExecute(
     return setTemperatures(temp_cmd);
 }
 
-common::Result TemperatureService::setTemperatures(const device::TemperatureControlCmd& temp_cmd) {
+common::Result TemperatureService::setTemperatures(const protocol::TemperatureControlCmd& temp_cmd) {
     try {
         std::lock_guard<std::mutex> lock(state_mutex_);
 

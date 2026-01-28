@@ -19,8 +19,8 @@ UserService::UserService()
         .version = "1.0.0",
         .description = "Manages user profile information",
         .action_type = "user_profile",
-        .execution_mode = protocol::command::ExecutionMode::SYNC,
-        .priority = protocol::command::CommandPriority::LOW,
+        .execution_mode = command::ExecutionMode::SYNC,
+        .priority = command::CommandPriority::LOW,
         .timeout_ms = 3000,
         .max_concurrent = 1,
         .require_ack = false,  // 用户资料更新不需要确认
@@ -42,7 +42,7 @@ std::vector<std::string> UserService::getSupportedCommands() const {
 }
 
 common::Result UserService::validateCommand(
-    const swan::device::ControlCommand& cmd) const {
+    const swan::protocol::ControlCommand& cmd) const {
 
     if (cmd.cmd() != "user_profile") {
         return common::Result::failure(
@@ -65,7 +65,7 @@ common::Result UserService::validateCommand(
     return validateUserProfile(profile_cmd);
 }
 
-common::Result UserService::validateUserProfile(const device::UserProfileCmd& profile_cmd) const{
+common::Result UserService::validateUserProfile(const protocol::UserProfileCmd& profile_cmd) const{
     // 验证用户名
     if (profile_cmd.name().empty()) {
         return common::Result::failure(
@@ -101,8 +101,8 @@ common::Result UserService::validateUserProfile(const device::UserProfileCmd& pr
 }
 
 common::Result UserService::doExecute(
-    const swan::device::ControlCommand& cmd,
-    const std::shared_ptr<protocol::command::CommandContext>& context) {
+    const swan::protocol::ControlCommand& cmd,
+    const std::shared_ptr<command::CommandContext>& context) {
 
     const auto& profile_cmd = cmd.user_profile();
 

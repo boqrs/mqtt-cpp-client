@@ -1,13 +1,12 @@
 //
 // Created by wave on 2026/1/23.
 //
-// dispatcher.cpp 修复所有锁
-
+#include <sstream>
 #include "logger/logger.h"
 #include "protocol/dispatch.h"
 
 namespace swan {
-namespace protocol {
+namespace prodispatcher {
 
     static std::string threadIdToString(std::thread::id tid) {
         std::ostringstream oss;
@@ -37,9 +36,10 @@ CommandDispatcher::~CommandDispatcher() {
 
     LOG_INFO("CommandDispatcher shutdown");
 }
+
     common::Result CommandDispatcher::dispatchUnifiedMessage(
-        const device::UnifiedMessage& message,
-        const std::shared_ptr<swan::protocol::command::CommandContext> context) {
+        const protocol::UnifiedMessage& message,
+        const std::shared_ptr<command::CommandContext> context) {
 
         if (!message.has_payload()) {
             return common::Result::failure(
@@ -70,9 +70,9 @@ CommandDispatcher::~CommandDispatcher() {
     }
 
 common::Result CommandDispatcher::dispatchControlCommand(
-    const device::ControlCommand& cmd,
+    const protocol::ControlCommand& cmd,
     const std::string& action_type,
-    const std::shared_ptr<swan::protocol::command::CommandContext>& context) {
+    const std::shared_ptr<command::CommandContext>& context) {
 
     // 查找对应的服务
     auto service = service_factory_.discoverServiceByAction(action_type);
@@ -323,7 +323,7 @@ CommandDispatcher::ExecutionStrategy CommandDispatcher::determineStrategy(
 
     common::Result CommandDispatcher::executeImmediately(
         ServicePtr service,
-        const device::ControlCommand& cmd,
+        const protocol::ControlCommand& cmd,
         std::shared_ptr<command::CommandContext> context) {
 
         // 验证服务状态
@@ -357,5 +357,5 @@ CommandDispatcher::ExecutionStrategy CommandDispatcher::determineStrategy(
         }
     }
 
-} // namespace protocol
+} // namespace prodispatcher
 } // namespace swan

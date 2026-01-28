@@ -18,12 +18,12 @@ namespace swan {
             std::vector<std::string> getSupportedCommands() const override;
 
             common::Result validateCommand(
-                const swan::device::ControlCommand& cmd) const override;
+                const swan::protocol::ControlCommand& cmd) const override;
 
         protected:
             common::Result doExecute(
-                const swan::device::ControlCommand& cmd,
-                const std::shared_ptr<protocol::command::CommandContext>& context) override;
+                const swan::protocol::ControlCommand& cmd,
+                const std::shared_ptr<command::CommandContext>& context) override;
 
         private:
             // 温度状态
@@ -43,7 +43,7 @@ namespace swan {
             mutable std::mutex state_mutex_;
 
             // 温度控制方法
-            common::Result setTemperatures(const device::TemperatureControlCmd& temp_cmd);
+            common::Result setTemperatures(const protocol::TemperatureControlCmd& temp_cmd);
             common::Result validateTemperature(int32_t temp, const std::string& name)const;
             common::Result updateTemperature(int32_t& current, int32_t target, const std::string& name);
 

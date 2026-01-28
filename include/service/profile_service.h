@@ -21,7 +21,7 @@ namespace swan {
         protected:
             common::Result doExecute(
                 const ControlCommand& cmd,
-                const std::shared_ptr<protocol::command::CommandContext>& context) override;
+                const std::shared_ptr<command::CommandContext>& context) override;
 
         private:
             // 用户信息
@@ -35,7 +35,7 @@ namespace swan {
             mutable std::mutex profile_mutex_;
 
             // 验证用户数据
-            common::Result validateUserProfile(const device::UserProfileCmd& profile_cmd) const;  // 添加 const
+            common::Result validateUserProfile(const protocol::UserProfileCmd& profile_cmd) const;  // 添加 const
 
             // 更新显示
             common::Result updateUserDisplay();

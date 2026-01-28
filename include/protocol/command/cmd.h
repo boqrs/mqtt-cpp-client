@@ -9,14 +9,15 @@
 #include <future>
 #include <vector>
 #include "protocol/command/context.h"
+#include "protocol.pb.h"
 #include "utils/result.h"
 
 namespace swan { namespace device { class ControlCommand; } }
 
 namespace swan {
-    namespace protocol {
+   // namespace protocol {
         namespace command {
-            using ControlCommand = ::swan::device::ControlCommand;
+            using ControlCommand = ::swan::protocol::ControlCommand;
 
             class CommandContext;
 
@@ -69,7 +70,7 @@ namespace swan {
 
                 // 验证命令参数
                 virtual common::Result validateCommand(
-                    const device::ControlCommand& cmd) const {
+                    const protocol::ControlCommand& cmd) const {
                     return common::Result::success();
                 }
 
@@ -83,5 +84,5 @@ namespace swan {
             };
 
         } // namespace command
-    } // namespace protocol
+   // } // namespace protocol
 } // namespace swan

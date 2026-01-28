@@ -70,9 +70,9 @@ private:
                 }
                 // 标记线程池已清理，避免重复操作
                 g_thread_pool_cleaned.store(true);
-                logger_->info("异步日志线程池已安全清理（适配旧版spdlog）");
+                logger_->info("Asynchronous logging thread pool cleaned up safely (compatible with legacy spdlog versions)");
             } catch (const std::exception& e) {
-                std::cerr << "清理日志线程池失败: " << e.what() << std::endl;
+                std::cerr << "Failed to clean up logging thread pool:" << e.what() << std::endl;
             }
         }
     }

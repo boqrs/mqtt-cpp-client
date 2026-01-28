@@ -18,8 +18,8 @@ StreamService::StreamService()
         .version = "1.0.0",
         .description = "Controls the 3D printer's video and data streaming",
         .action_type = "stream_control",
-        .execution_mode = protocol::command::ExecutionMode::ASYNC,
-        .priority = protocol::command::CommandPriority::NORMAL,
+        .execution_mode = command::ExecutionMode::ASYNC,
+        .priority = command::CommandPriority::NORMAL,
         .timeout_ms = 10000,
         .max_concurrent = 5,  // 支持多个并发流
         .require_ack = true,
@@ -46,7 +46,7 @@ std::vector<std::string> StreamService::getSupportedCommands() const {
 }
 
 common::Result StreamService::validateCommand(
-    const swan::device::ControlCommand& cmd) const {
+    const swan::protocol::ControlCommand& cmd) const {
 
     if (cmd.cmd() != "stream_control") {
         return common::Result::failure(
@@ -65,7 +65,7 @@ common::Result StreamService::validateCommand(
 
     const auto& stream_cmd = cmd.stream_control();
 
-    if (stream_cmd.action() == device::StreamControlCmd_StreamAction_UNKNOWN_ACTION) {
+    if (stream_cmd.action() == protocol::StreamControlCmd_StreamAction_UNKNOWN_ACTION) {
         return common::Result::failure(
             common::common::INVALID_PARAMETER,
             "Invalid stream action: UNKNOWN_ACTION"
@@ -76,22 +76,22 @@ common::Result StreamService::validateCommand(
 }
 
 common::Result StreamService::doExecute(
-    const swan::device::ControlCommand& cmd,
-    const std::shared_ptr<protocol::command::CommandContext>& context) {
+    const swan::protocol::ControlCommand& cmd,
+    const std::shared_ptr<command::CommandContext>& context) {
 
     const auto& stream_cmd = cmd.stream_control();
 
     LOG_INFO("Executing stream control command, action: {}",
-             device::StreamControlCmd_StreamAction_Name(stream_cmd.action()));
+             protocol::StreamControlCmd_StreamAction_Name(stream_cmd.action()));
 
     switch (stream_cmd.action()) {
-        case device::StreamControlCmd_StreamAction_OPEN:
+        case protocol::StreamControlCmd_StreamAction_OPEN:
             return startStream(stream_cmd, context);
 
-        case device::StreamControlCmd_StreamAction_CLOSE:
+        case protocol::StreamControlCmd_StreamAction_CLOSE:
             return stopStream(stream_cmd, context);
 
-        case device::StreamControlCmd_StreamAction_UNKNOWN_ACTION:
+        case protocol::StreamControlCmd_StreamAction_UNKNOWN_ACTION:
         default:
             return common::Result::failure(
                 common::common::INVALID_PARAMETER,
@@ -100,8 +100,8 @@ common::Result StreamService::doExecute(
     }
 }
 
-common::Result StreamService::startStream(const device::StreamControlCmd& stream_cmd,
-                                         const std::shared_ptr<protocol::command::CommandContext>& context) {
+common::Result StreamService::startStream(const protocol::StreamControlCmd& stream_cmd,
+                                         const std::shared_ptr<command::CommandContext>& context) {
 
     try {
         std::lock_guard<std::mutex> lock(sessions_mutex_);
@@ -158,8 +158,8 @@ common::Result StreamService::startStream(const device::StreamControlCmd& stream
     }
 }
 
-common::Result StreamService::stopStream(const device::StreamControlCmd& stream_cmd,
-                                        const std::shared_ptr<protocol::command::CommandContext>& context) {
+common::Result StreamService::stopStream(const protocol::StreamControlCmd& stream_cmd,
+                                        const std::shared_ptr<command::CommandContext>& context) {
 
     try {
         std::lock_guard<std::mutex> lock(sessions_mutex_);

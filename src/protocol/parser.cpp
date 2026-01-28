@@ -8,11 +8,12 @@
 #include <regex>
 #include <mutex>
 
+#include "protocol/command/context.h"
 #include "protocol/parser.h"
 #include "logger/logger.h"
 
 namespace swan {
-namespace protocol {
+namespace proparser {
 
 // ==================== ProtocolParser 实现 ====================
 
@@ -36,7 +37,7 @@ common::Result ProtocolParser::parseAndHandle(
 
     try {
         // 步骤1: 解析消息
-        device::UnifiedMessage message;
+        protocol::UnifiedMessage message;
         auto parse_result = parseMessage(raw_data, message);
 
         if (!parse_result.isSuccess()) {
@@ -110,12 +111,6 @@ common::Result ProtocolParser::parseAndHandle(
     }
 }
 
-
-
-
-
-
-
 void ProtocolParser::setProtocolVersion(const ProtocolVersion& version) {
     LOG_INFO("Setting protocol version to: {}", version.toString());
     protocol_version_ = version;
@@ -140,7 +135,7 @@ void ProtocolParser::resetStatistics() {
 
 common::Result ProtocolParser::parseMessage(
     std::string_view raw_data,
-    device::UnifiedMessage& message) {
+    protocol::UnifiedMessage& message) {
 
     if (raw_data.empty()) {
         LOG_WARN("Empty raw data received");
@@ -193,7 +188,7 @@ common::Result ProtocolParser::parseMessage(
 }
 
 common::Result ProtocolParser::validateMessage(
-    const device::UnifiedMessage& message) const {
+    const protocol::UnifiedMessage& message) const {
 
     std::vector<common::Result> validation_results;
 
@@ -313,7 +308,7 @@ common::Result ProtocolParser::validateMessage(
 }
 
 common::Result ProtocolParser::handleDeviceCommand(
-    const device::UnifiedMessage& message,
+    const protocol::UnifiedMessage& message,
     Callback response_callback) {
 
     // 确保我们有设备命令
@@ -409,7 +404,7 @@ common::Result ProtocolParser::handleDeviceCommand(
     }
 
     // 创建命令上下文
-    auto context = std::make_shared<command::CommandContext>(
+    auto context = std::make_shared<swan::command::CommandContext>(
         "",  // 设备ID，可以从消息中提取或由上层设置
         message.request_id(),
         std::chrono::system_clock::now()
@@ -435,7 +430,7 @@ common::Result ProtocolParser::handleDeviceCommand(
 }
 
 common::Result ProtocolParser::handleDeviceState(
-    const device::UnifiedMessage& message,
+    const protocol::UnifiedMessage& message,
     Callback response_callback) {
 
     // 设备端通常不应该收到 device_state 消息

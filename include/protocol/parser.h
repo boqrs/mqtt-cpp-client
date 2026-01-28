@@ -4,12 +4,12 @@
 
 #pragma once
 
+#include <mutex>
 #include "protocol.pb.h"
 #include "utils/result.h"
-#include "protocol/command/context.h"
 
 namespace swan {
-namespace protocol {
+namespace proparser {
 
 // 协议版本
 struct ProtocolVersion {
@@ -79,18 +79,18 @@ private:
     // 解析步骤
     common::Result parseMessage(
         std::string_view raw_data,
-        device::UnifiedMessage& message);
+        protocol::UnifiedMessage& message);
 
     common::Result validateMessage(
-        const device::UnifiedMessage& message) const;
+        const protocol::UnifiedMessage& message) const;
 
     // 消息处理
     common::Result handleDeviceCommand(
-        const device::UnifiedMessage& message,
+        const protocol::UnifiedMessage& message,
         Callback response_callback);
 
     common::Result handleDeviceState(
-        const device::UnifiedMessage& message,
+        const protocol::UnifiedMessage& message,
         Callback response_callback);
 
     // 统计更新

@@ -19,8 +19,8 @@ LightService::LightService()
         .version = "1.0.0",
         .description = "Controls the 3D printer's lighting system",
         .action_type = "light_control",
-        .execution_mode = protocol::command::ExecutionMode::SYNC,
-        .priority = protocol::command::CommandPriority::NORMAL,
+        .execution_mode = command::ExecutionMode::SYNC,
+        .priority = command::CommandPriority::NORMAL,
         .timeout_ms = 5000,
         .max_concurrent = 1,
         .require_ack = true,
@@ -35,7 +35,7 @@ std::vector<std::string> LightService::getSupportedCommands() const {
 }
 
 common::Result LightService::validateCommand(
-    const swan::device::ControlCommand& cmd) const {
+    const swan::protocol::ControlCommand& cmd) const {
 
     if (cmd.cmd() != "light_control") {
         return common::Result::failure(
@@ -55,7 +55,7 @@ common::Result LightService::validateCommand(
     const auto& light_cmd = cmd.light_control();
 
     // 验证状态值
-    if (light_cmd.status() == device::LightControlCmd_LightStatus_UNKNOWN) {
+    if (light_cmd.status() == protocol::LightControlCmd_LightStatus_UNKNOWN) {
         return common::Result::failure(
             common::common::INVALID_PARAMETER,
             "Invalid light status: UNKNOWN"
@@ -66,22 +66,22 @@ common::Result LightService::validateCommand(
 }
 
 common::Result LightService::doExecute(
-    const swan::device::ControlCommand& cmd,
-    const std::shared_ptr<protocol::command::CommandContext>& context) {
+    const swan::protocol::ControlCommand& cmd,
+    const std::shared_ptr<command::CommandContext>& context) {
 
     const auto& light_cmd = cmd.light_control();
 
     LOG_INFO("Executing light control command, status: {}",
-             device::LightControlCmd_LightStatus_Name(light_cmd.status()));
+             protocol::LightControlCmd_LightStatus_Name(light_cmd.status()));
 
     switch (light_cmd.status()) {
-        case device::LightControlCmd_LightStatus_OPEN:
+        case protocol::LightControlCmd_LightStatus_OPEN:
             return turnOnLight();
 
-        case device::LightControlCmd_LightStatus_CLOSE:
+        case protocol::LightControlCmd_LightStatus_CLOSE:
             return turnOffLight();
 
-        case device::LightControlCmd_LightStatus_UNKNOWN:
+        case protocol::LightControlCmd_LightStatus_UNKNOWN:
         default:
             return common::Result::failure(
                 common::common::INVALID_PARAMETER,

@@ -7,7 +7,6 @@
 #pragma once
 
 #include "service/base_service.h"
-#include "protocol.pb.h"
 #include <queue>
 #include <condition_variable>
 
@@ -26,7 +25,7 @@ public:
 protected:
     common::Result doExecute(
         const ControlCommand& cmd,
-        const std::shared_ptr<protocol::command::CommandContext>& context) override;
+        const std::shared_ptr<command::CommandContext>& context) override;
 
 private:
     // 打印作业状态
@@ -44,7 +43,7 @@ private:
         bool flow_calibration = false;
         bool use_ms = false;
         int32_t t_count = 0;
-        std::vector<device::MaterialInfo> materials;
+        std::vector<protocol::MaterialInfo> materials;
     };
 
     std::shared_ptr<PrintJob> current_job_;
@@ -55,14 +54,14 @@ private:
     std::thread print_thread_;
 
     // 作业处理方法
-    common::Result startNewJob(const device::NewJobCmd& job_cmd,
-                              const std::shared_ptr<protocol::command::CommandContext>& context);
-    common::Result startNewLocalJob(const device::NewLocalJobCmd& local_job_cmd,
-                                   const std::shared_ptr<protocol::command::CommandContext>& context);
+    common::Result startNewJob(const protocol::NewJobCmd& job_cmd,
+                              const std::shared_ptr<command::CommandContext>& context);
+    common::Result startNewLocalJob(const protocol::NewLocalJobCmd& local_job_cmd,
+                                   const std::shared_ptr<command::CommandContext>& context);
 
     // 验证材料信息
-    common::Result validateMaterialInfo(const device::MaterialInfo& material) const;
-    common::Result validateJobParameters(const device::NewJobArgs& args) const;  // 添加 const
+    common::Result validateMaterialInfo(const protocol::MaterialInfo& material) const;
+    common::Result validateJobParameters(const protocol::NewJobArgs& args) const;  // 添加 const
 
     // 打印线程
     void printProcessor();
@@ -71,7 +70,7 @@ private:
     common::Result loadPrintFile(const std::string& filepath);
     common::Result executeLeveling();
     common::Result executeFlowCalibration();
-    common::Result setupMaterials(const std::vector<device::MaterialInfo>& materials);
+    common::Result setupMaterials(const std::vector<protocol::MaterialInfo>& materials);
     common::Result startPrinting();
     common::Result pausePrinting();
     common::Result resumePrinting();

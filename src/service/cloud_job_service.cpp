@@ -23,8 +23,8 @@ PrintService::PrintService()
         .version = "1.0.0",
         .description = "Manages 3D printing jobs",
         .action_type = "print_control",
-        .execution_mode = protocol::command::ExecutionMode::ASYNC,
-        .priority = protocol::command::CommandPriority::CRITICAL,
+        .execution_mode = command::ExecutionMode::ASYNC,
+        .priority = command::CommandPriority::CRITICAL,
         .timeout_ms = 0,  // 长时间运行，无超时
         .max_concurrent = 1,  // 一次只能打印一个作业
         .require_ack = true,
@@ -54,7 +54,7 @@ std::vector<std::string> PrintService::getSupportedCommands() const {
 }
 
 common::Result PrintService::validateCommand(
-    const swan::device::ControlCommand& cmd) const {
+    const swan::protocol::ControlCommand& cmd) const {
 
     std::string command = cmd.cmd();
 
@@ -130,7 +130,7 @@ common::Result PrintService::validateCommand(
     return common::Result::success("Command validation passed");
 }
 
-common::Result PrintService::validateJobParameters(const device::NewJobArgs& args) const {
+common::Result PrintService::validateJobParameters(const swan::protocol::NewJobArgs& args) const {
     if (args.filename().empty()) {
         return common::Result::failure(
             common::common::INVALID_PARAMETER,
@@ -156,7 +156,7 @@ common::Result PrintService::validateJobParameters(const device::NewJobArgs& arg
     return common::Result::success();
 }
 
-common::Result PrintService::validateMaterialInfo(const device::MaterialInfo& material) const{
+common::Result PrintService::validateMaterialInfo(const protocol::MaterialInfo& material) const{
     if (material.slot() < 0) {
         return common::Result::failure(
             common::common::INVALID_PARAMETER,
@@ -182,8 +182,8 @@ common::Result PrintService::validateMaterialInfo(const device::MaterialInfo& ma
 }
 
 common::Result PrintService::doExecute(
-    const swan::device::ControlCommand& cmd,
-    const std::shared_ptr<protocol::command::CommandContext>& context) {
+    const swan::protocol::ControlCommand& cmd,
+    const std::shared_ptr<command::CommandContext>& context) {
 
     std::string command = cmd.cmd();
 
@@ -200,8 +200,8 @@ common::Result PrintService::doExecute(
     );
 }
 
-common::Result PrintService::startNewJob(const device::NewJobCmd& job_cmd,
-                                        const std::shared_ptr<protocol::command::CommandContext>& context) {
+common::Result PrintService::startNewJob(const protocol::NewJobCmd& job_cmd,
+                                        const std::shared_ptr<command::CommandContext>& context) {
 
     try {
         const auto& args = job_cmd.args();
@@ -257,8 +257,8 @@ common::Result PrintService::startNewJob(const device::NewJobCmd& job_cmd,
     }
 }
 
-common::Result PrintService::startNewLocalJob(const device::NewLocalJobCmd& local_job_cmd,
-                                             const std::shared_ptr<protocol::command::CommandContext>& context) {
+common::Result PrintService::startNewLocalJob(const protocol::NewLocalJobCmd& local_job_cmd,
+                                             const std::shared_ptr<command::CommandContext>& context) {
 
     try {
         const auto& args = local_job_cmd.args();
@@ -450,7 +450,7 @@ common::Result PrintService::executeFlowCalibration() {
     }
 }
 
-common::Result PrintService::setupMaterials(const std::vector<device::MaterialInfo>& materials) {
+common::Result PrintService::setupMaterials(const std::vector<protocol::MaterialInfo>& materials) {
     try {
         LOG_DEBUG("Setting up materials");
 

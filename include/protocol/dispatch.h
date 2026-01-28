@@ -2,7 +2,6 @@
 // Created by wave on 2026/1/23.
 //
 
-// dispatch.h 修改锁相关部分
 #pragma once
 
 #include <memory>
@@ -20,7 +19,7 @@
 #include "service/service_factory.h"
 
 namespace swan {
-namespace protocol {
+namespace prodispatcher {
 
 class CommandDispatcher {
 public:
@@ -31,14 +30,14 @@ public:
 
     // 协议解析
     common::Result dispatchUnifiedMessage(
-        const device::UnifiedMessage& message,
-        const std::shared_ptr<swan::protocol::command::CommandContext> context);
+        const protocol::UnifiedMessage& message,
+        const std::shared_ptr<swan::command::CommandContext> context);
 
     //命令执行
     common::Result dispatchControlCommand(
-        const device::ControlCommand& cmd,
+        const protocol::ControlCommand& cmd,
         const std::string& action_type,
-        const std::shared_ptr<swan::protocol::command::CommandContext>& context);
+        const std::shared_ptr<swan::command::CommandContext>& context);
 
     // 服务管理
     bool registerService(ServicePtr service);
@@ -55,7 +54,7 @@ public:
 
     // 队列管理
     struct QueuedCommand {
-        device::ControlCommand cmd;
+        protocol::ControlCommand cmd;
         std::shared_ptr<command::CommandContext> context;
         std::string action_type;
         std::chrono::steady_clock::time_point enqueue_time;
@@ -77,7 +76,7 @@ private:
     // 执行方法
     common::Result executeImmediately(
         ServicePtr service,
-        const device::ControlCommand& cmd,
+        const protocol::ControlCommand& cmd,
         std::shared_ptr<command::CommandContext> context);
 
     // 队列处理

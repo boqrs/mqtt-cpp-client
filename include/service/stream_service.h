@@ -18,12 +18,12 @@ namespace swan {
             std::vector<std::string> getSupportedCommands() const override;
 
             common::Result validateCommand(
-                const swan::device::ControlCommand& cmd) const override;
+                const swan::protocol::ControlCommand& cmd) const override;
 
         protected:
             common::Result doExecute(
-                const swan::device::ControlCommand& cmd,
-                const std::shared_ptr<protocol::command::CommandContext>& context) override;
+                const swan::protocol::ControlCommand& cmd,
+                const std::shared_ptr<command::CommandContext>& context) override;
 
         private:
             // 流会话管理
@@ -46,10 +46,10 @@ namespace swan {
             std::atomic<int> session_counter_{0};
 
             // 流控制方法
-            common::Result startStream(const device::StreamControlCmd& stream_cmd,
-                                      const std::shared_ptr<protocol::command::CommandContext>& context);
-            common::Result stopStream(const device::StreamControlCmd& stream_cmd,
-                                     const std::shared_ptr<protocol::command::CommandContext>& context);
+            common::Result startStream(const protocol::StreamControlCmd& stream_cmd,
+                                      const std::shared_ptr<command::CommandContext>& context);
+            common::Result stopStream(const protocol::StreamControlCmd& stream_cmd,
+                                     const std::shared_ptr<command::CommandContext>& context);
 
             // 生成会话ID
             std::string generateSessionId();

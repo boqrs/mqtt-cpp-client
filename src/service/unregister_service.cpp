@@ -18,8 +18,8 @@ UnregisterService::UnregisterService()
         .version = "1.0.0",
         .description = "Handles device unregistration and cleanup",
         .action_type = "device_unregister",
-        .execution_mode = protocol::command::ExecutionMode::SYNC,
-        .priority = protocol::command::CommandPriority::CRITICAL,
+        .execution_mode = command::ExecutionMode::SYNC,
+        .priority = command::CommandPriority::CRITICAL,
         .timeout_ms = 60000,  // 注销可能需要较长时间
         .max_concurrent = 1,
         .require_ack = true,
@@ -34,7 +34,7 @@ std::vector<std::string> UnregisterService::getSupportedCommands() const {
 }
 
 common::Result UnregisterService::validateCommand(
-    const swan::device::ControlCommand& cmd) const {
+    const swan::protocol::ControlCommand& cmd) const {
 
     if (cmd.cmd() != "device_unregister") {
         return common::Result::failure(
@@ -56,8 +56,8 @@ common::Result UnregisterService::validateCommand(
 }
 
 common::Result UnregisterService::doExecute(
-    const swan::device::ControlCommand& cmd,
-    const std::shared_ptr<protocol::command::CommandContext>& context) {
+    const swan::protocol::ControlCommand& cmd,
+    const std::shared_ptr<command::CommandContext>& context) {
 
     LOG_WARN("Starting device unregistration process");
 

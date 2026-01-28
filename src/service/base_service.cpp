@@ -2,8 +2,6 @@
 // Created by wave on 2026/1/23.
 //
 
-// base_service.cpp
-
 #include <chrono>
 #include <iostream>
 
@@ -160,8 +158,8 @@ void BaseService::updateStatistics(const common::Result& result,
 }
 
 common::Result BaseService::executeWithGuard(
-    const swan::device::ControlCommand& cmd,
-    const std::shared_ptr<protocol::command::CommandContext>& context) {
+    const swan::protocol::ControlCommand& cmd,
+    const std::shared_ptr<command::CommandContext>& context) {
 
     if (status_ != ServiceStatus::READY && status_ != ServiceStatus::RUNNING) {
         return common::Result::failure(
@@ -181,8 +179,8 @@ common::Result BaseService::executeWithGuard(
 }
 
 common::Result BaseService::execute(
-    const swan::device::ControlCommand& cmd,
-    const std::shared_ptr<protocol::command::CommandContext>& context) {
+    const swan::protocol::ControlCommand& cmd,
+    const std::shared_ptr<command::CommandContext>& context) {
 
     auto start_time = std::chrono::steady_clock::now();
 

@@ -5,7 +5,6 @@
 
 #include <memory>
 #include <string>
-#include <mutex>
 #include "protocol/parser.h"
 #include "protocol/dispatch.h"
 
@@ -18,10 +17,11 @@ namespace swan {
 
         bool shutdownCommandProcessing(std::string& error_msg);
 
-        std::shared_ptr<protocol::ProtocolParser> getProtocolParser();
-        std::shared_ptr<protocol::CommandDispatcher> getCommandDispatcher();
+        std::shared_ptr<proparser::ProtocolParser> getProtocolParser();
+        std::shared_ptr<prodispatcher::CommandDispatcher> getCommandDispatcher();
 
         bool isCommandProcessingInitialized();
+        bool dispatchMqttCommand(const std::string& topic, const std::string& payload);
 
     } // namespace init
 } // namespace swan

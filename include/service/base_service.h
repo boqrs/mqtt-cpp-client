@@ -9,15 +9,13 @@
 #include <mutex>
 #include <vector>
 #include <string>
-
 #include "protocol/command/cmd.h"
-#include "utils/models/protocol.h"
 
 namespace swan {
 namespace services {
 
 // 使用 protobuf 生成的 ControlCommand
-using ControlCommand = ::swan::device::ControlCommand;
+using ControlCommand = ::swan::protocol::ControlCommand;
 
 // 服务状态
 enum class ServiceStatus {
@@ -37,8 +35,8 @@ struct ServiceConfig {
     std::string version;
     std::string description;
     std::string action_type;
-    swan::protocol::command::ExecutionMode execution_mode;
-    swan::protocol::command::CommandPriority priority;
+    swan::command::ExecutionMode execution_mode;
+    swan::command::CommandPriority priority;
     uint32_t timeout_ms;
     uint32_t max_concurrent;
     bool require_ack;
@@ -46,7 +44,7 @@ struct ServiceConfig {
 };
 
 // 服务基类
-class BaseService : public protocol::command::ICommandHandler {
+class BaseService : public command::ICommandHandler {
 public:
     explicit BaseService(const ServiceConfig& config);
     virtual ~BaseService();
@@ -57,11 +55,11 @@ public:
     std::string getDescription() const override { return config_.description; }
     std::string getSupportedActionType() const override { return config_.action_type; }
 
-    protocol::command::ExecutionMode getExecutionMode() const override {
+    command::ExecutionMode getExecutionMode() const override {
         return config_.execution_mode;
     }
 
-    protocol::command::CommandPriority getPriority() const override {
+    command::CommandPriority getPriority() const override {
         return config_.priority;
     }
 
@@ -120,7 +118,7 @@ public:
     // 执行方法
     common::Result execute(
         const ControlCommand& cmd,
-        const std::shared_ptr<protocol::command::CommandContext>& context) override;
+        const std::shared_ptr<command::CommandContext>& context) override;
 
     // 状态查询
     bool isBusy() const override { return false; }
@@ -138,12 +136,12 @@ protected:
     // 执行包装器
     common::Result executeWithGuard(
         const ControlCommand& cmd,
-        const std::shared_ptr<protocol::command::CommandContext>& context);
+        const std::shared_ptr<command::CommandContext>& context);
 
     // 纯虚函数，子类必须实现
     virtual common::Result doExecute(
         const ControlCommand& cmd,
-        const std::shared_ptr<protocol::command::CommandContext>& context) = 0;
+        const std::shared_ptr<command::CommandContext>& context) = 0;
 
     // 服务特定的初始化和关闭
     virtual common::Result onInitialize() { return common::Result::success(); }

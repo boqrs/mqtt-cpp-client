@@ -18,12 +18,12 @@ namespace swan {
             std::vector<std::string> getSupportedCommands() const override;
 
             common::Result validateCommand(
-                const swan::device::ControlCommand& cmd) const override;
+                const swan::protocol::ControlCommand& cmd) const override;
 
         protected:
             common::Result doExecute(
-                const swan::device::ControlCommand& cmd,
-                const std::shared_ptr<protocol::command::CommandContext>& context) override;
+                const swan::protocol::ControlCommand& cmd,
+                const std::shared_ptr<command::CommandContext>& context) override;
 
         private:
             // 注销步骤

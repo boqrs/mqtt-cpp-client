@@ -11,6 +11,7 @@
 #include <functional>
 #include <mutex>
 #include "service/base_service.h"
+#include "logger/logger.h"
 
 namespace swan {
 namespace services {
@@ -68,12 +69,21 @@ public:
             ServiceFactory::instance().registerService<T>(service_type);
         }
     };
+
+    void clearServiceInstances() {
+        std::lock_guard<std::mutex> lock(mutex_);
+        service_instances_.clear();
+        LOG_DEBUG("Service instance cache cleared");
+    }
+
+
 private:
     ServiceFactory();
     ~ServiceFactory() = default;
 
     std::unordered_map<std::string, ServiceCreator> creators_;
     mutable std::mutex mutex_;
+    mutable std::unordered_map<std::string, std::shared_ptr<BaseService>> service_instances_; // 新增：实例缓存（做好的菜）
 };
 
 } // namespace services

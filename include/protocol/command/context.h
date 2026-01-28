@@ -12,7 +12,7 @@
 #include "utils/result.h"
 
 namespace swan {
-namespace protocol {
+//namespace protocol {
 namespace command {
 
 class CommandContext {
@@ -79,5 +79,5 @@ private:
 };
 
 } // namespace command
-} // namespace protocol
+//} // namespace protocol
 } // namespace swan

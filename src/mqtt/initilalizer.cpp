@@ -11,6 +11,7 @@
 #include <iostream>
 
 #include "logger/logger.h"
+#include "protocol/initialize.h"
 // 单例实现
 MqttInitializer& MqttInitializer::getInstance() {
     static MqttInitializer instance;
@@ -89,12 +90,12 @@ bool MqttInitializer::initialize() {
         return false;
     }
     if (broker_port <= 0 || broker_port > 65535) {
-        LOG_ERROR("Invalid MQTT broker port: %d", broker_port);
+        LOG_ERROR("Invalid MQTT broker port: {}", broker_port);
         return false;
     }
 
     // 初始化MQTT管理器
-    LOG_INFO("Initializing MQTT manager: %s:%d, client_id=%s",
+    LOG_INFO("Initializing MQTT manager: {}:{}, client_id={}",
              broker_ip.c_str(), broker_port,
              client_id.empty() ? "auto" : client_id.c_str());
 
@@ -120,7 +121,7 @@ bool MqttInitializer::initialize() {
     }
 
     // 修复lambda警告：移除未使用的max_retry捕获
-    LOG_INFO("Waiting for MQTT connection (max retry: %d)", max_retry);
+    LOG_INFO("Waiting for MQTT connection (max retry: {})", max_retry);
     std::unique_lock<std::mutex> cv_lock(m_cv_mutex);
     m_cv.wait(cv_lock, [this]() { // 移除max_retry捕获
         // 显式使用类内的m_current_retry和全局宏MQTT_MAX_RETRY_COUNT
@@ -129,7 +130,7 @@ bool MqttInitializer::initialize() {
 
     // 检查连接状态
     if (!m_connected) {
-        LOG_ERROR("MQTT connection failed after %d retries", max_retry);
+        LOG_ERROR("MQTT connection failed after {} retries", max_retry);
         MqttManager::getInstance().stop();
         return false;
     }
@@ -139,8 +140,16 @@ bool MqttInitializer::initialize() {
         LOG_ERROR("Partial topics subscribe failed");
     }
 
+     MqttManager::getInstance().setMessageCallback([this](const std::string& topic, const std::string& payload) {
+         // 直接调用init中的解析分发接口，命令自动入队+独立线程执行
+           bool ok = swan::init::dispatchMqttCommand(topic, payload);
+           if (!ok) {
+               LOG_WARN("Failed to dispatch MQTT command, topic: {}", topic);
+           }
+    });
+
     m_initialized = true;
-    LOG_INFO("MQTT init success: subscribed %zu topics", m_subscribe_topics.size());
+    LOG_INFO("MQTT init success: subscribed {} topics", m_subscribe_topics.size());
     return true;
 }
 
@@ -165,7 +174,7 @@ bool MqttInitializer::reconnectWithBackoff(int retry_count, int max_retry) {
     int backoff_ms = MQTT_BASE_BACKOFF_MS * (1 << (retry_count - 1));
     backoff_ms = std::min(backoff_ms, MQTT_MAX_BACKOFF_MS);
 
-    LOG_INFO("Retry %d/%d: backoff %dms", retry_count, max_retry, backoff_ms);
+    LOG_INFO("Retry {}/{}: backoff {}ms", retry_count, max_retry, backoff_ms);
     std::this_thread::sleep_for(std::chrono::milliseconds(backoff_ms));
 
     return MqttManager::getInstance().init(
@@ -184,14 +193,14 @@ void MqttInitializer::onConnectionStatusChanged(bool connected, const std::strin
     m_connected = connected;
 
     if (connected) {
-        LOG_INFO("MQTT connected: %s", reason.c_str());
+        LOG_INFO("MQTT connected: {}", reason.c_str());
         m_cv.notify_one();
     } else {
-        LOG_ERROR("MQTT disconnected: %s", reason.c_str());
+        LOG_ERROR("MQTT disconnected: {}", reason.c_str());
 
         if (m_current_retry < MQTT_MAX_RETRY_COUNT) {
             m_current_retry++;
-            LOG_INFO("Reconnect attempt %d/%d", m_current_retry, MQTT_MAX_RETRY_COUNT);
+            LOG_INFO("Reconnect attempt {}/{}", m_current_retry, MQTT_MAX_RETRY_COUNT);
 
             std::thread retry_thread([this]() {
                 this->reconnectWithBackoff(m_current_retry, MQTT_MAX_RETRY_COUNT);
@@ -213,12 +222,13 @@ bool MqttInitializer::subscribeTopics() {
     bool all_success = true;
     for (const auto& [topic, qos] : m_subscribe_topics) {
         if (!MqttManager::getInstance().subscribe(topic, qos)) {
-            LOG_ERROR("Subscribe failed: %s (QoS=%d)", topic.c_str(), qos);
+            LOG_ERROR("Subscribe failed: {} (QoS={})", topic.c_str(), qos);
             all_success = false;
         } else {
-            LOG_INFO("Subscribe success: %s (QoS=%d)", topic.c_str(), qos);
+            LOG_INFO("Subscribe success: {} (QoS={})", topic.c_str(), qos);
         }
     }
+
     return all_success;
 }
 

@@ -57,6 +57,10 @@ public:
     // 检查连接状态
     bool isConnected() const { return m_connected; }
 
+    void setPublishQueueMaxSize(size_t max_size) {
+        std::lock_guard<std::mutex> q_lock(m_queue_mutex);
+        m_queue_max_size = max_size;
+    }
 private:
     MqttManager() = default;
     ~MqttManager() { stop(); }
@@ -112,4 +116,5 @@ private:
     int m_default_qos = 1;
     bool m_default_retained = false;
     int m_publish_timeout_ms = 5000;
+    int m_queue_max_size;
 };

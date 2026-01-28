@@ -139,6 +139,10 @@ bool MqttManager::publish(const std::string& topic, const std::string& payload, 
     }
 
     std::lock_guard<std::mutex> q_lock(m_queue_mutex);
+    if (m_publish_queue.size() == m_queue_max_size) {
+        LOG_ERROR("message queue is full, publish failed");
+        return false;
+    }
     m_publish_queue.push({topic, payload, qos, retained});
     m_queue_cv.notify_one();  // 唤醒工作线程处理
     return true;

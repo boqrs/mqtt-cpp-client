@@ -71,6 +71,10 @@ bool MqttInitializer::initialize() {
 #define MQTT_PUBLISH_TIMEOUT_MS 5000
 #endif
 
+#ifndef MQTT_PUBLISH_QUEUE_MAX_SIZE
+#define MQTT_PUBLISH_QUEUE_MAX_SIZE 1000
+#endif
+
     // 加载配置（现在所有宏都有定义）
     const std::string broker_ip = MQTT_BROKER_IP;
     const int broker_port = MQTT_BROKER_PORT;
@@ -147,7 +151,7 @@ bool MqttInitializer::initialize() {
                LOG_WARN("Failed to dispatch MQTT command, topic: {}", topic);
            }
     });
-
+    MqttManager::getInstance().setPublishQueueMaxSize(MQTT_PUBLISH_QUEUE_MAX_SIZE);
     m_initialized = true;
     LOG_INFO("MQTT init success: subscribed {} topics", m_subscribe_topics.size());
     return true;

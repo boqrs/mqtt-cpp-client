@@ -6,7 +6,7 @@
 // cloud_job_service.h 添加 const
 #pragma once
 
-#include "service/base_service.h"
+#include "base/base_service.h"
 #include <queue>
 #include <condition_variable>
 

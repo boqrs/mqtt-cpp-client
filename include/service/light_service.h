@@ -6,7 +6,7 @@
 
 #include "protocol.pb.h"
 
-#include "service/base_service.h"
+#include "base/base_service.h"
 
 namespace swan {
     namespace services {

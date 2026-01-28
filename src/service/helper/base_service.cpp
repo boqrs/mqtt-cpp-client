@@ -6,7 +6,7 @@
 #include <iostream>
 
 #include "logger/logger.h"
-#include "service/base_service.h"
+#include "../../../include/service/base/base_service.h"
 
 namespace swan {
 namespace services {

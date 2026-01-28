@@ -16,7 +16,7 @@
 #include "protocol.pb.h"
 #include "utils/result.h"
 #include "protocol/command/context.h"
-#include "service/service_factory.h"
+#include "../service/base/service_factory.h"
 
 namespace swan {
 namespace prodispatcher {

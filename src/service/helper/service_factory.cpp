@@ -5,7 +5,7 @@
 #include <algorithm>
 
 #include "logger/logger.h"
-#include "service/service_factory.h"
+#include "../../../include/service/base/service_factory.h"
 
 
 namespace swan {

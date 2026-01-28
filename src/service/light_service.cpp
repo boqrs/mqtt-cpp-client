@@ -9,7 +9,7 @@
 #include "logger/logger.h"
 #include "service/light_service.h"
 #include "utils/result.h"
-#include "service/service_factory.h"
+#include "../../include/service/base/service_factory.h"
 
 namespace swan {
 namespace services {

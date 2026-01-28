@@ -6,8 +6,8 @@
 #include <config.h>
 
 #include "logger/logger.h"
-#include "service/service_factory.h"
-#include "service/base_service.h"
+#include "../../include/service/base/service_factory.h"
+#include "../../include/service/base/base_service.h"
 #include "utils/result.h" // 仅内部业务逻辑使用，不对外返回
 
 namespace swan {

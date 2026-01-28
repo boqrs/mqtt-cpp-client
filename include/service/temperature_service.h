@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "service/base_service.h"
+#include "base/base_service.h"
 #include "protocol.pb.h"
 
 namespace swan {

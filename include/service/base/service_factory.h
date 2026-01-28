@@ -10,7 +10,7 @@
 #include <vector>
 #include <functional>
 #include <mutex>
-#include "service/base_service.h"
+#include "base_service.h"
 #include "logger/logger.h"
 
 namespace swan {

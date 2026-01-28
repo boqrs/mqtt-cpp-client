@@ -2,7 +2,7 @@
 // Created by wave on 2026/1/27.
 //
 
-#include "service/service_factory.h"
+#include "../../../include/service/base/service_factory.h"
 #include "service/light_service.h"
 #include "service/cloud_job_service.h"
 #include "service/profile_service.h"

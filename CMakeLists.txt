@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.14)
 project(swan VERSION 1.0.0 LANGUAGES CXX)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 cmake_policy(SET CMP0078 OLD)  # 兼容旧类型处理
 set(CMAKE_SUPPRESS_DEVELOPER_WARNINGS ON CACHE BOOL "Suppress developer warnings")  # 禁用 dev 警告
 
@@ -268,7 +269,8 @@ if(LOGGER_SRCS)
     if(ENABLE_SPDLOG)
         message(STATUS "正在为 embedded_logger 配置 spdlog...")
         target_include_directories(embedded_logger PRIVATE /usr/local/include)
-        target_link_libraries(embedded_logger PRIVATE /usr/local/lib/libspdlog.a)
+        #target_link_libraries(embedded_logger PRIVATE spdlog::spdlog)
+        target_include_directories(embedded_logger PRIVATE /usr/include/spdlog)
         target_link_libraries(embedded_logger PRIVATE fmt::fmt)
         target_compile_definitions(embedded_logger PRIVATE ENABLE_SPDLOG=1)
         message(STATUS "spdlog 配置完成")
@@ -333,6 +335,7 @@ if(DEVICE_SERVICE_SRCS)
     target_link_libraries(device_service PUBLIC
             proto_messages
             embedded_logger
+            atomic
     )
 
     message(STATUS "设备服务库创建完成: device_service")
@@ -396,7 +399,7 @@ set(DEVICE_MODE "ad5x")          # 固定值
 set(DEVICE_SN "SNWMOD12332211222")      # 固定序列号
 
 # Broker基础配置（默认值）
-set(MQTT_BROKER_IP "10.33.44.3" CACHE STRING "MQTT broker address")
+set(MQTT_BROKER_IP "10.33.35.156" CACHE STRING "MQTT broker address")
 set(MQTT_BROKER_PORT 18082 CACHE INT "MQTT broker port")
 set(MQTT_CLIENT_ID "" CACHE STRING "MQTT client id（Auto-generate if empty）")
 set(MQTT_PROTOCOL "tcp" CACHE STRING "MQTT communication protocol (tcp/ssl)")
@@ -472,7 +475,6 @@ if(PAHO_MQTT_C_FOUND)
 endif()
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
-        atomic
         mqtt_client
         proto_messages
         embedded_logger
@@ -480,6 +482,8 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         ${ZLIB_LIBRARIES}
         ${Protobuf_LIBRARIES}
         nlohmann_json::nlohmann_json
+        pthread
+        atomic
 )
 
 if(ENABLE_SPDLOG)
@@ -489,7 +493,7 @@ endif()
 set_target_properties(${PROJECT_NAME} PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
         OUTPUT_NAME "swan"
-        CXX_STANDARD 17
+        #CXX_STANDARD 17
         CXX_STANDARD_REQUIRED ON
         CXX_EXTENSIONS OFF
 )
@@ -497,7 +501,6 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 # ------------------------------------------------------------------------------
 # 12. 辅助功能
 # ------------------------------------------------------------------------------
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 add_custom_target(clean_all
         COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_BINARY_DIR}/bin

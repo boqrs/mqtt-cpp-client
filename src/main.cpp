@@ -59,7 +59,7 @@ int main() {
     auto success = services::registerAllServices();
     if (!success) {
         LOG_ERROR("service initialization failed");
-        shutdownLogger();
+    shutdownLogger();
         return -1;
     }
 

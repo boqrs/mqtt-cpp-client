@@ -1,0 +1,59 @@
+{
+  "name": "Linux C++ Development",
+
+  "dockerComposeFile": "../docker-compose.yml",
+
+  "service": "cpp-dev",
+
+  "workspaceFolder": "/workspace",
+
+  "shutdownAction": "stopCompose",
+
+  "remoteUser": "root",
+
+  "overrideCommand": false,
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.cpptools",
+
+        "ms-vscode.cpptools-extension-pack",
+
+        "ms-vscode.cmake-tools",
+
+        "llvm-vs-code-extensions.vscode-clangd",
+
+        "twxs.cmake",
+
+        "ms-azuretools.vscode-docker"
+      ],
+
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash",
+
+        "C_Cpp.intelliSenseEngine": "disabled",
+
+        "clangd.arguments": [
+          "--background-index",
+
+          "--clang-tidy",
+
+          "--completion-style=detailed",
+
+          "--header-insertion=iwyu"
+        ],
+
+        "cmake.generator": "Ninja",
+
+        "cmake.buildDirectory": "${workspaceFolder}/build",
+
+        "cmake.configureOnOpen": true,
+
+        "cmake.configureSettings": {
+          "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+        }
+      }
+    }
+  }
+}

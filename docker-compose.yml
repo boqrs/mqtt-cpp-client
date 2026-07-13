@@ -1,0 +1,80 @@
+version: "3.9"
+
+services:
+  cpp-dev:
+    image: swan-dev:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cpp-dev
+    working_dir: /workspace
+
+    volumes:
+      # 挂载整个工程
+      - .:/workspace:cached
+      # 保留 bash history
+      - ~/.bash_history:/root/.bash_history:rw
+      # Git 配置
+      - ~/.gitconfig:/root/.gitconfig:ro
+      # SSH Key（拉 Git 用）
+      - ~/.ssh:/root/.ssh:ro
+      # ccache 命名卷
+      - ccache:/root/.cache/ccache
+
+    stdin_open: true
+    tty: true
+    privileged: false
+
+    cap_add:
+      - SYS_PTRACE
+
+    security_opt:
+      - seccomp=unconfined
+
+    environment:
+      TZ: Asia/Shanghai
+      CC: clang
+      CXX: clang++
+      CMAKE_GENERATOR: Ninja
+      CMAKE_EXPORT_COMPILE_COMMANDS: "ON"
+      CMAKE_BUILD_PARALLEL_LEVEL: "8"
+      TERM: xterm-256color
+
+    # 保持容器运行
+    command: ["tail", "-f", "/dev/null"]
+
+  emqx:
+    image: emqx/emqx:5.8.0
+    container_name: emqx
+    user: "0"
+    restart: always
+
+    ports:
+      - "18082:1883"    # MQTT TCP
+      - "18084:8083"    # MQTT WebSocket
+      - "18085:8084"    # MQTT over TLS
+      - "18083:18083"   # Dashboard
+
+    volumes:
+      - emqx_data:/opt/emqx/data
+      - emqx_log:/opt/emqx/log
+
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          memory: 256M
+
+    environment:
+      - EMQX_NODE_NAME=emqx@node1.emqx.local
+      - TZ=Asia/Shanghai
+      - EMQX_DASHBOARD__DEFAULT_USERNAME=admin
+      - EMQX_DASHBOARD__DEFAULT_PASSWORD=public
+
+# 声明命名卷
+volumes:
+  ccache:
+  emqx_data:
+  emqx_log:

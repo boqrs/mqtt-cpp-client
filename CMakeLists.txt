@@ -153,6 +153,40 @@ find_package(Threads REQUIRED)
 find_package(fmt REQUIRED)
 message(STATUS "找到 fmt 库")
 
+# ====== AWS CRT 库配置 ======
+set(AWS_CRT_INCLUDE_DIRS "/usr/local/include")
+set(AWS_CRT_LIB_NAMES aws-c-common aws-c-io aws-c-mqtt aws-c-http aws-c-event-stream aws-checksums s2n)
+set(AWS_CRT_FOUND FALSE)
+set(AWS_CRT_LIBRARIES "")
+
+# 验证头文件存在
+if(EXISTS "${AWS_CRT_INCLUDE_DIRS}/aws/crt/crt.h")
+    message(STATUS "找到 AWS CRT 头文件: ${AWS_CRT_INCLUDE_DIRS}")
+else()
+    message(WARNING "未找到 AWS CRT 头文件，请确保已安装 AWS IoT Device SDK for C++")
+endif()
+
+# 查找库文件
+foreach(lib_name ${AWS_CRT_LIB_NAMES})
+    find_library(AWS_CRT_LIB_${lib_name}
+            NAMES ${lib_name}
+            PATHS /usr/local/lib /usr/lib
+            NO_DEFAULT_PATH
+    )
+    if(AWS_CRT_LIB_${lib_name})
+        list(APPEND AWS_CRT_LIBRARIES ${AWS_CRT_LIB_${lib_name}})
+        message(STATUS "找到 AWS CRT 库: ${AWS_CRT_LIB_${lib_name}}")
+    else()
+        message(WARNING "未找到 AWS CRT 库: ${lib_name}")
+    endif()
+endforeach()
+
+if(AWS_CRT_LIBRARIES)
+    set(AWS_CRT_FOUND TRUE)
+    message(STATUS "所有必要的 AWS CRT 库已找到。")
+else()
+    message(WARNING "未找到所有必要的 AWS CRT 库文件，AWS IoT Core 功能可能无法正常工作。")
+endif()
 # ------------------------------------------------------------------------------
 # 4. 集成 nlohmann_json 选项
 # ------------------------------------------------------------------------------
@@ -376,6 +410,11 @@ if(MQTT_SRCS)
 
     if(PAHO_MQTT_C_FOUND)
         target_link_libraries(mqtt_client PUBLIC ${PAHO_MQTT_C_LIB})
+    endif()
+
+    if(AWS_CRT_FOUND)
+        target_include_directories(mqtt_client PUBLIC ${AWS_CRT_INCLUDE_DIRS})
+        target_link_libraries(mqtt_client PUBLIC ${AWS_CRT_LIBRARIES})
         # 可能需要链接的其他库
         find_library(DL_LIB dl)
         if(DL_LIB)
@@ -431,6 +470,13 @@ set(MQTT_KEEP_ALIVE_INTERVAL 60 CACHE INT "MQTT keep-alive interval (s)")
 set(MQTT_CLEAN_SESSION 1 CACHE BOOL "MQTT clean session enabled")
 set(MQTT_VERSION 4 CACHE INT "MQTT protocol version (4=3.1.1, 5=5.0)")
 
+# ====================== AWS IoT Core 配置项（可通过-D参数覆盖） ======================
+set(USE_AWS_IOT 0 CACHE BOOL "是否使用AWS IoT Core (0/1)")
+set(AWS_IOT_ENDPOINT "" CACHE STRING "AWS IoT Core Endpoint")
+set(AWS_IOT_ROOT_CA_PATH "" CACHE STRING "AWS IoT Core Root CA 证书路径")
+set(AWS_IOT_CERT_PATH "" CACHE STRING "AWS IoT Core 客户端证书路径")
+set(AWS_IOT_PRIVATE_KEY_PATH "" CACHE STRING "AWS IoT Core 客户端私钥路径")
+
 # 确保目录存在
 file(MAKE_DIRECTORY ${GENERATED_CONFIG_DIR})
 
@@ -441,6 +487,18 @@ configure_file(
         @ONLY
 )
 message(STATUS "配置头文件将生成于: ${GENERATED_CONFIG_DIR}/config.h")
+
+if (USE_AWS_IOT)
+    # 查找并链接 AWS CRT SDK
+    find_package(AWSCrt REQUIRED)
+    if (AWSCrt_FOUND)
+        message(STATUS "Found AWS CRT SDK: ${AWSCrt_LIBRARIES}")
+        target_include_directories(mqtt_client PRIVATE ${AWSCrt_INCLUDE_DIRS})
+        target_link_libraries(mqtt_client PRIVATE ${AWSCrt_LIBRARIES})
+    else()
+        message(FATAL_ERROR "AWS CRT SDK not found. Please ensure it's installed and discoverable by CMake.")
+    endif()
+endif()
 
 # ------------------------------------------------------------------------------
 # 11. 主程序

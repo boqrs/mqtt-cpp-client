@@ -66,5 +66,13 @@
 #define MQTT_CLEAN_SESSION @MQTT_CLEAN_SESSION@            // 是否清理会话(0/1)
 #define MQTT_VERSION @MQTT_VERSION@                        // MQTT版本(4=3.1.1,5=5.0)
 
+// ====================== AWS IoT Core 配置（新增） ======================
+#define USE_AWS_IOT @USE_AWS_IOT@                          // 是否使用AWS IoT Core (0/1)
+#define AWS_IOT_ENDPOINT "@AWS_IOT_ENDPOINT@"              // AWS IoT Core Endpoint
+#define AWS_IOT_ROOT_CA_PATH "@AWS_IOT_ROOT_CA_PATH@"      // AWS IoT Core Root CA 证书路径
+#define AWS_IOT_CERT_PATH "@AWS_IOT_CERT_PATH@"            // AWS IoT Core 客户端证书路径
+#define AWS_IOT_PRIVATE_KEY_PATH "@AWS_IOT_PRIVATE_KEY_PATH@" // AWS IoT Core 客户端私钥路径
+
+
 // 版本信息字符串
 #define PROJECT_VERSION_STRING PROJECT_NAME " v" STRINGIFY(PROJECT_VERSION)

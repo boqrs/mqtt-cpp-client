@@ -98,7 +98,11 @@ private:
     bool m_initialized;               // 初始化完成标记
     int m_current_retry;              // 当前重连次数
     std::vector<std::pair<std::string, int>> m_subscribe_topics; // 待订阅主题列表
-
+    bool m_use_aws_iot = false;
+    std::string m_aws_iot_endpoint;
+    std::string m_aws_iot_root_ca_path;
+    std::string m_aws_iot_cert_path;
+    std::string m_aws_iot_private_key_path;
 };
 
 bool initMqtt();

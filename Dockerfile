@@ -99,6 +99,23 @@ RUN git clone --depth=1 https://github.com/eclipse/paho.mqtt.c.git /tmp/paho && 
     rm -rf /tmp/paho
 
 # -----------------------------------------------------------------------------
+# Install AWS CRT C Libraries and AWS IoT Device SDK for C++
+# -----------------------------------------------------------------------------
+RUN git clone --recursive https://github.com/awslabs/aws-iot-device-sdk-cpp-v2.git && \
+    cd aws-iot-device-sdk-cpp-v2 && \
+    git checkout v1.18.0 && \
+    git submodule update --init --recursive && \
+    cmake -S . -B build \
+      -DCMAKE_INSTALL_PREFIX=/usr/local \
+      -DCMAKE_PREFIX_PATH=/usr/local \
+      -DBUILD_SHARED_LIBS=ON && \
+    cmake --build build --target install
+    #cd .. && rm -rf aws-iot-device-sdk-cpp-v2
+
+# Clean up build sources
+WORKDIR /
+
+# -----------------------------------------------------------------------------
 # Environment
 # -----------------------------------------------------------------------------
 ENV CC=clang

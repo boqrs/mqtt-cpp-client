@@ -326,4 +326,5 @@ void shutdownLogger() {
         spdlog::shutdown();
         global_logger.reset();
     }
+    exit(-1);
 }

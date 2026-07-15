@@ -8,6 +8,8 @@
 
 #include "mqtt/manage.h"
 #include  "logger/logger.h"
+#include "mqtt/client.h" // 确保 MqttClient 头文件被包含
+#include "mqtt/aws_iot_mqtt_client.h" // 确保 AwsIotMqttClient 头文件被包含
 
 // 生成随机客户端ID（为空时使用）
 static std::string generateClientId() {
@@ -20,8 +22,14 @@ static std::string generateClientId() {
 }
 
 bool MqttManager::init(const std::string& broker_ip, int broker_port,
-                       const std::string& client_id, const std::string& username,
-                       const std::string& password, bool auto_reconnect, int reconnect_interval) {
+                       const std::string& client_id,
+                       const std::string& username, const std::string& password,
+                       bool auto_reconnect, int reconnect_interval,
+                       bool use_aws_iot, // 新增参数
+                       const std::string& aws_iot_endpoint,
+                       const std::string& aws_iot_root_ca_path,
+                       const std::string& aws_iot_cert_path,
+                       const std::string& aws_iot_private_key_path){
     std::lock_guard<std::mutex> lock(m_mutex);
     if (m_running) {
         LOG_ERROR("MqttManager already initialized");
@@ -37,12 +45,38 @@ bool MqttManager::init(const std::string& broker_ip, int broker_port,
     m_reconnect_interval = reconnect_interval;
 
     // 创建基础客户端
-    m_client = std::make_unique<MqttClient>(m_broker_ip, m_broker_port, m_client_id);
+   // m_client = std::make_unique<MqttClient>(m_broker_ip, m_broker_port, m_client_id);
+     m_use_aws_iot = use_aws_iot; // 保存 AWS IoT Core 配置
+     m_aws_iot_endpoint = aws_iot_endpoint;
+     m_aws_iot_root_ca_path = aws_iot_root_ca_path;
+     m_aws_iot_cert_path = aws_iot_cert_path;
+     m_aws_iot_private_key_path = aws_iot_private_key_path;
+
+     // 根据配置创建不同的客户端实例
+     if (m_use_aws_iot) {
+         m_client = std::make_unique<AwsIotMqttClient>(
+            m_aws_iot_endpoint, m_client_id,
+            m_aws_iot_root_ca_path, m_aws_iot_cert_path, m_aws_iot_private_key_path
+        );
+        LOG_INFO("MqttManager initialized with AWS IoT Core client.");
+    } else {
+        m_client = std::make_unique<MqttClient>(
+            m_broker_ip, m_broker_port, m_client_id, m_username, m_password, m_auto_reconnect
+        );
+        LOG_INFO("MqttManager initialized with generic MQTT client.");
+    }
+
+    if (!m_client) {
+        LOG_ERROR("Failed to create MQTT client instance.");
+        return false;
+    }
+    
     m_client->setMessageCallback([this](const std::string& topic, const std::string& payload) {
         if (m_msg_callback) {
             m_msg_callback(topic, payload);
         }
     });
+    
     m_client->setStatusCallback([this](bool connected, const std::string& reason) {
         m_connected = connected;
         if (m_status_callback) {
@@ -209,7 +243,7 @@ void MqttManager::restoreSubscriptions() {
 
 bool MqttManager::reconnect() {
     LOG_INFO("Trying to reconnect to %s:%d", m_broker_ip.c_str(), m_broker_port);
-    bool ret = m_client->connect(m_username, m_password);
+    bool ret = m_client->connect();
     if (ret) {
         m_connected = true;
         LOG_INFO("Reconnected successfully");

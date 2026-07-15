@@ -6,19 +6,29 @@
 #include <iostream>
 #include "logger/logger.h"
 
-MqttClient::MqttClient(const std::string& broker_ip, int broker_port, const std::string& client_id)
-    : m_client_id(client_id) {
+MqttClient::MqttClient(const std::string& broker_ip, int broker_port, const std::string& client_id,
+                       const std::string& username, const std::string& password, bool auto_reconnect)
+    : m_client_id(client_id),
+      m_connected(false),
+      m_msg_callback(nullptr),
+      m_status_callback(nullptr),
+      m_username(username), // 使用传入的 username
+      m_password(password), // 使用传入的 password
+      m_auto_reconnect(auto_reconnect) // 使用传入的 auto_reconnect
+{
     m_broker_uri = "tcp://" + broker_ip + ":" + std::to_string(broker_port);
 }
 
 MqttClient::~MqttClient() {
     disconnect();
+    // 只有在 m_client 被成功创建后才销毁
+    // 避免在创建失败时对空指针操作
     if (m_client) {
         MQTTClient_destroy(&m_client);
     }
 }
 
-bool MqttClient::connect(const std::string& username, const std::string& password) {
+bool MqttClient::connect() {
     if (m_connected) {
         LOG_ERROR("Already connected to {}", m_broker_uri.c_str());
         return true;
@@ -39,9 +49,9 @@ bool MqttClient::connect(const std::string& username, const std::string& passwor
     conn_opts.MQTTVersion = MQTTVERSION_3_1_1;  // 兼容主流MQTT服务器
 
     // 设置用户名密码
-    if (!username.empty()) {
-        conn_opts.username = username.c_str();
-        conn_opts.password = password.empty() ? nullptr : password.c_str();
+    if (!m_username.empty()) {
+        conn_opts.username = m_username.c_str();
+        conn_opts.password = m_password.empty() ? nullptr : m_password.c_str();
     }
 
     // 注册回调
@@ -134,11 +144,23 @@ bool MqttClient::unsubscribe(const std::string& topic) {
     return true;
 }
 
+bool MqttClient::isConnected() const {
+    return m_connected;
+}
+
 void MqttClient::yield(int timeout_ms) {
     if (m_connected && m_client) {
         MQTTClient_yield();  // 处理网络事件，接收消息
     }
 }
+
+void MqttClient::setMessageCallback(MqttMessageCallback cb) {
+     m_msg_callback = std::move(cb);
+ }
+ 
+void MqttClient::setStatusCallback(MqttStatusCallback cb) {
+     m_status_callback = std::move(cb);
+ }
 
 int MqttClient::onMessageArrived(void* context, char* topicName, int topicLen, MQTTClient_message* message) {
     MqttClient* client = static_cast<MqttClient*>(context);

@@ -71,6 +71,24 @@ bool MqttInitializer::initialize() {
 #define MQTT_PUBLISH_TIMEOUT_MS 5000
 #endif
 
+
+#ifndef USE_AWS_IOT
+#define USE_AWS_IOT 0
+#endif
+#ifndef AWS_IOT_ENDPOINT
+#define AWS_IOT_ENDPOINT ""
+#endif
+#ifndef AWS_IOT_ROOT_CA_PATH
+#define AWS_IOT_ROOT_CA_PATH ""
+#endif
+#ifndef AWS_IOT_CERT_PATH
+#define AWS_IOT_CERT_PATH ""
+#endif
+#ifndef AWS_IOT_PRIVATE_KEY_PATH
+#define AWS_IOT_PRIVATE_KEY_PATH ""
+#endif
+
+
 #ifndef MQTT_PUBLISH_QUEUE_MAX_SIZE
 #define MQTT_PUBLISH_QUEUE_MAX_SIZE 1000
 #endif
@@ -84,6 +102,20 @@ bool MqttInitializer::initialize() {
     const bool auto_reconnect = MQTT_AUTO_RECONNECT;
     const int max_retry = MQTT_MAX_RETRY_COUNT;
     const int base_backoff_ms = MQTT_BASE_BACKOFF_MS;
+
+    m_use_aws_iot = USE_AWS_IOT;
+    m_aws_iot_endpoint = AWS_IOT_ENDPOINT;
+    m_aws_iot_root_ca_path = AWS_IOT_ROOT_CA_PATH;
+    m_aws_iot_cert_path = AWS_IOT_CERT_PATH;
+    m_aws_iot_private_key_path = AWS_IOT_PRIVATE_KEY_PATH;
+    
+
+    const bool use_aws_iot = USE_AWS_IOT;
+    const std::string aws_iot_endpoint = AWS_IOT_ENDPOINT;
+    const std::string aws_iot_root_ca_path = AWS_IOT_ROOT_CA_PATH;
+    const std::string aws_iot_cert_path = AWS_IOT_CERT_PATH;
+    const std::string aws_iot_private_key_path = AWS_IOT_PRIVATE_KEY_PATH;
+
 
     // 解析订阅主题（现在不会报MQTT_SUBSCRIBE_TOPICS未定义）
     m_subscribe_topics = parseMqttSubscribeTopics();
@@ -103,9 +135,12 @@ bool MqttInitializer::initialize() {
              broker_ip.c_str(), broker_port,
              client_id.empty() ? "auto" : client_id.c_str());
 
-    if (!MqttManager::getInstance().init(
-            broker_ip, broker_port, client_id, username, password,
-            auto_reconnect, base_backoff_ms / 1000
+    if (!MqttManager::getInstance().init(broker_ip, broker_port, client_id,
+                                          username, password, auto_reconnect,
+                                          base_backoff_ms / 1000,
+                                          use_aws_iot, aws_iot_endpoint,
+                                          aws_iot_root_ca_path, aws_iot_cert_path,
+                                          aws_iot_private_key_path
         )) {
         LOG_ERROR("MQTT manager init failed");
         return false;
@@ -181,14 +216,13 @@ bool MqttInitializer::reconnectWithBackoff(int retry_count, int max_retry) {
     LOG_INFO("Retry {}/{}: backoff {}ms", retry_count, max_retry, backoff_ms);
     std::this_thread::sleep_for(std::chrono::milliseconds(backoff_ms));
 
-    return MqttManager::getInstance().init(
-        MQTT_BROKER_IP,
-        MQTT_BROKER_PORT,
-        MQTT_CLIENT_ID,
-        MQTT_USERNAME,
-        MQTT_PASSWORD,
-        MQTT_AUTO_RECONNECT,
-        MQTT_BASE_BACKOFF_MS / 1000
+    return MqttManager::getInstance().init(MQTT_BROKER_IP, MQTT_BROKER_PORT,
+                                          MQTT_CLIENT_ID, MQTT_USERNAME,
+                                          MQTT_PASSWORD, MQTT_AUTO_RECONNECT,
+                                          MQTT_BASE_BACKOFF_MS / 1000,
+                                          m_use_aws_iot, m_aws_iot_endpoint,
+                                          m_aws_iot_root_ca_path, m_aws_iot_cert_path,
+                                          m_aws_iot_private_key_path
     ) && MqttManager::getInstance().start();
 }
 

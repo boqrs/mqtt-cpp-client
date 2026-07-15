@@ -3,7 +3,7 @@
 //
 
 #pragma once
-#include "client.h"
+#include "i_mqtt_client.h"
 #include <thread>
 #include <mutex>
 #include <atomic>
@@ -23,10 +23,16 @@ public:
     MqttManager(const MqttManager&) = delete;
     MqttManager& operator=(const MqttManager&) = delete;
 
-    bool init(const std::string& broker_ip, int broker_port = 1883,
-              const std::string& client_id = "", const std::string& username = "",
-              const std::string& password = "", bool auto_reconnect = true,
-              int reconnect_interval = 5);
+
+    bool init(const std::string& broker_ip, int broker_port,
+                       const std::string& client_id,
+                       const std::string& username, const std::string& password,
+                       bool auto_reconnect, int reconnect_interval,
+                       bool use_aws_iot, // 新增参数
+                       const std::string& aws_iot_endpoint,
+                       const std::string& aws_iot_root_ca_path,
+                       const std::string& aws_iot_cert_path,
+                       const std::string& aws_iot_private_key_path);
 
     // 启动连接（后台线程）
     bool start();
@@ -92,7 +98,7 @@ private:
     int m_reconnect_interval = 5;
 
     // 核心对象
-    std::unique_ptr<MqttClient> m_client;
+    std::unique_ptr<IMqttClient> m_client;
     std::unique_ptr<std::thread> m_worker_thread;
     std::atomic<bool> m_running = false;
     std::atomic<bool> m_connected = false;
@@ -101,6 +107,15 @@ private:
     std::mutex m_mutex;
     std::mutex m_queue_mutex;
     std::condition_variable m_queue_cv;
+
+    // AWS IoT Core 相关配置
+    bool m_use_aws_iot = false;
+    std::string m_aws_iot_endpoint;
+    std::string m_aws_iot_root_ca_path;
+    std::string m_aws_iot_cert_path;
+    std::string m_aws_iot_private_key_path;
+
+
     std::queue<PublishTask> m_publish_queue;  // 异步发布队列
 
     // 订阅列表（断线恢复用）
@@ -116,5 +131,5 @@ private:
     int m_default_qos = 1;
     bool m_default_retained = false;
     int m_publish_timeout_ms = 5000;
-    int m_queue_max_size;
+    int m_queue_max_size = 1000;
 };
